@@ -83,11 +83,15 @@ class PlaylistRepository @Inject constructor(
                         callback(result)                    // returns list to ViewModel
                     }
                 }
-        }
+            }
     }
 }
 
 // VIEW MODEL
+
+/**
+ * Creates ViewModel for displaying playlist details.
+ */
 @HiltViewModel
 class PlaylistDetailsViewModel @Inject constructor(
     private val repository: PlaylistRepository
@@ -121,7 +125,9 @@ class PlaylistDetailsViewModel @Inject constructor(
 
 private val TAG = "MainActivity"
 
-
+/**
+ * Kind of like my main.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -152,21 +158,6 @@ class MainActivity : ComponentActivity() {
 //                }
 //        }
 
-//        val myRef = database.getReference("song")
-        // Read from the database
-//        myObjectsRef.addValueEventListener(object : ValueEventListener {
-//            override fun onDataChange(dataSnapshot: DataSnapshot) {
-//                // This method is called once with the initial value and again
-//                // whenever data at this location is updated.
-//                val songs = dataSnapshot.getValue<Song>()
-//                Log.e(TAG, "Value is: $songs")
-//            }
-//
-//            override fun onCancelled(error: DatabaseError) {
-//                // Failed to read value
-//                Log.e(TAG, "Failed to read value.", error.toException())
-//            }
-//        })
 //        myRef.setValue("Hello, World!")
 
 
@@ -174,9 +165,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SharedPlayTheme {
-
                 PlaylistDetailsScreen("abc1")
-
             }
         }
     }
@@ -185,9 +174,7 @@ class MainActivity : ComponentActivity() {
 //
 // UI LAYER
 @Composable //rendering starts
-fun PlaylistDetailsScreen(
-    playlistId: String,                              // ID of the playlist we want to display
-) {
+fun PlaylistDetailsScreen(playlistId: String) {
     val viewModel: PlaylistDetailsViewModel = hiltViewModel()
 
     // LaunchedEffect runs code when the Composable first appears or when 'playlistId' changes
@@ -218,12 +205,3 @@ fun PlaylistDetailsScreen(
 
     }
 }
-
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun Preview() {
-//    SharedPlayTheme {
-//        PlaylistDetailsScreen("1")
-//    }
-//}
