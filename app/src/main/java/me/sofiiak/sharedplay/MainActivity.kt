@@ -47,25 +47,47 @@ import me.sofiiak.sharedplay.Comment
 import javax.inject.Inject
 
 // DATA LAYER
-class PlaylistRepository @Inject constructor(
-    private val db: DatabaseReference,
-) {
+class PlaylistRepository @Inject constructor(private val db: DatabaseReference) {
+    /**
+     * Retrieves user information from the database based on provided ID.
+     */
+    fun getUser(userID: String, callback: (User) -> Unit) {
+        db.child("Users").child(userID)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                snapshot.getValue(User::class.java)?.let { user ->
+                    callback(user)
+                    Log.d("PlaylistRepo", "Fetched user info: $user")
+                }
+            }
+            .addOnFailureListener { error ->
+                Log.e("PlaylistRepo", "Failed to get user: ${error.message}")
+            }
+    }
+
     /**
      * Retrieves playlist information from the database based on provided ID.
      */
-//    fun getPlaylist(playlistId: String, onResult: (Playlist?) -> Unit) {
-//        db.child("playlists").child(playlistId)
-//            .addListenerForSingleValueEvent(object : ValueEventListener {
-//                override fun onDataChange(snapshot: DataSnapshot) {
-//                    val playlist = snapshot.getValue(Playlist::class.java)
-//                    onResult(playlist)
-//                }
-//
-//                override fun onCancelled(error: DatabaseError) {
-//                    onResult(null)
-//                }
-//            })
-//    }
+    fun getPlaylist(userID: String, playlistId: String, onResult: (Playlist?) -> Unit) {
+        db.child("Users").child(userID).child("playlists").child(playlistId)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    Log.d("PlaylistRepo", "Snapshot key: ${snapshot.key}")
+                    Log.d("PlaylistRepo", "Snapshot exists: ${snapshot.exists()}")
+                    Log.d(
+                        "PlaylistRepo",
+                        "Snapshot value: ${snapshot.value}"
+                    ) // raw data from Firebase
+
+                    val playlist = snapshot.getValue(Playlist::class.java)
+                    Log.d("PlaylistRepo", "Deserialized Playlist: $playlist")
+
+                }
+                    override fun onCancelled(error: DatabaseError) {
+                    onResult(null)
+                }
+            })
+    }
 
     /**
      * Retrieves a list of songs from the database based on their IDs.
@@ -81,6 +103,7 @@ class PlaylistRepository @Inject constructor(
 
                     if (result.size == songIDs.size) {
                         callback(result)                    // returns list to ViewModel
+                        Log.d("PlaylistRepo", "Fetched songs info: $result")
                     }
                 }
             }
@@ -94,9 +117,18 @@ class PlaylistRepository @Inject constructor(
  */
 @HiltViewModel
 class PlaylistDetailsViewModel @Inject constructor(
-    private val repository: PlaylistRepository
-//    private val repository: PlaylistRepository = PlaylistRepository(Firebase.database.reference)
-) : ViewModel() {
+    private val repository: PlaylistRepository) : ViewModel() {
+    private val _user = MutableLiveData<User>()
+    val user: LiveData<User> get() = _user
+
+    /**
+     * Loads user info.
+     */
+    fun loadUser(userId: String) {
+        repository.getUser(userId) { user ->
+            _user.value = user
+        }
+    }
 
     private val _playlist = MutableLiveData<Playlist>()
     val playlist: LiveData<Playlist> get() = _playlist
@@ -104,24 +136,25 @@ class PlaylistDetailsViewModel @Inject constructor(
     private val _songs = MutableLiveData<List<Song>>()
     val songs: LiveData<List<Song>> get() = _songs
 
-    fun loadPlaylist(songIDs: List<String>) {
-        repository.getSongs(songIDs) { list ->
-            _songs.value = list             // updates LiveData → UI observes it
+    /**
+     * Loads songs for a playlist with playlistID.
+     */
+    fun loadPlaylist(userID: String, playlistID: String) {
+        Log.d("PlaylistDetailsViewModel", "loadPlaylist called with $userID and $playlistID")
+        repository.getPlaylist(userID, playlistID) { playlist ->
+            playlist?.let {
+                _playlist.value = it
+
+                // Print the songs list
+                Log.d("PlaylistDetailsViewModel", "Songs IDs in playlist: ${it}")
+
+//                repository.getSongs(it.songsList) { list ->
+//                    _songs.value = list         // updates LiveData → UI observes it
+//                }
+            }
         }
     }
-//    fun loadPlaylist(playlistId: String) {
-//        repository.getPlaylist(playlistId) { playlist ->
-//            playlist?.let {
-//                _playlist.value = it
-//                repository.getSongs(it.songs) { list ->
-//                    _songs.value = list
-//                }
-//            }
-//        }
-//    }
 }
-
-
 
 private val TAG = "MainActivity"
 
@@ -131,21 +164,19 @@ private val TAG = "MainActivity"
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val songs = mutableListOf<Song>().apply {
-        add(Song(title = "Song 1", artist = "Artist 1", addedBy = "u1"))
-        add(Song(title = "Song 2", artist = "Artist 2", addedBy = "u2"))
-        add(Song(title = "Song 3", artist = "Artist 3", addedBy = "u1"))
-    }
+//    private val songs = mutableListOf<Song>().apply {
+//        add(Song(title = "Song 1", artist = "Artist 1", addedBy = "u1"))
+//        add(Song(title = "Song 2", artist = "Artist 2", addedBy = "u2"))
+//        add(Song(title = "Song 3", artist = "Artist 3", addedBy = "u1"))
+//    }
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-        FirebaseApp.initializeApp(this)
-        val database = Firebase.database.reference
-
         // Write a message to the database
-
-        val myObjectsRef = database.child("songs") // "myObjects" is your parent node
+//        FirebaseApp.initializeApp(this)
+//        val database = Firebase.database.reference
+//        val myObjectsRef = database.child("songs") // "myObjects" is your parent node
 //        songs.forEach { song ->
 //            myObjectsRef.push().setValue(song)
 //                .addOnSuccessListener {
@@ -176,23 +207,26 @@ class MainActivity : ComponentActivity() {
 @Composable //rendering starts
 fun PlaylistDetailsScreen(playlistId: String) {
     val viewModel: PlaylistDetailsViewModel = hiltViewModel()
-
     // LaunchedEffect runs code when the Composable first appears or when 'playlistId' changes
     LaunchedEffect(playlistId) {
+        viewModel.loadUser("u1")
+        val userID = "u1"  // or get it dynamically from auth
         // Call the ViewModel to load songs for this playlist
-        // Here we just pass fake song IDs for testing
-        viewModel.loadPlaylist(listOf("-OaNPyqs3S-D8tCn56VQ", "-OaNPyqtaYxveQnVvgoA", "-OaNPyqtaYxveQnVvgoB"))
+        viewModel.loadPlaylist(userID=userID, playlistID="p1")
     }
 
     // observeAsState converts LiveData<List<Song>> from ViewModel into Compose state
     // so the UI automatically updates when the list changes
+    val curUser by viewModel.user.observeAsState(User())
+    val playlist by viewModel.playlist.observeAsState(Playlist())
     val songs by viewModel.songs.observeAsState(emptyList()) // default to empty list if null
 
     // Column arranges UI elements vertically
     Column {
         // Display playlist title
         Text(
-            text = "Playlist Details",             // Static title for now
+            text = "${playlist.name}, created by ${curUser.name} last updated at ${playlist.lastUpdated}",             // Static title for now
+
         )
 
         // LazyColumn is like RecyclerView; it efficiently displays scrolling lists
