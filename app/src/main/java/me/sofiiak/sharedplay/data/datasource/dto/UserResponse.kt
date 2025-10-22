@@ -1,0 +1,10 @@
+package me.sofiiak.sharedplay.data.datasource.dto
+
+data class UserResponse(
+    val id: String ,
+    val email: String ,
+    val name: String ,
+    val password: String,
+    val date_joined: String ,
+    val friends: List<String>,
+)

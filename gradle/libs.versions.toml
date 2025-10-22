@@ -11,10 +11,12 @@ composeBom = "2024.09.00"
 firebaseBom = "34.3.0"
 adsMobileSdk = "0.20.0-beta01"
 ksp = "2.0.21-1.0.26"
+lifecycleViewmodelCompose = "2.9.4"
 lifecycleViewmodelKtx = "2.9.4"
 hiltCompose = "1.3.0"
 
 [libraries]
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-database = { group = "com.google.firebase", name = "firebase-database" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
