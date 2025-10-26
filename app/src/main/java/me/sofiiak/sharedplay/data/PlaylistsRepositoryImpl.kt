@@ -4,7 +4,7 @@ import jakarta.inject.Inject
 import me.sofiiak.sharedplay.data.datasource.dto.PlaylistResponse
 
 class PlaylistsRepositoryImpl @Inject constructor(
-    private val service: PlaylistService
+    private val service: PlaylistService,
 ) : PlaylistsRepository {
 
     override suspend fun getPlaylistsForUser(userId: String): List<PlaylistResponse> {

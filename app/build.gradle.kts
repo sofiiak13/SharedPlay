@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "me.sofiiak.sharedplay"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -75,9 +75,11 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
 
-    implementation("com.squareup.moshi:moshi:1.14.0")
-    implementation("com.squareup.moshi:moshi-kotlin:1.14.0")
-    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+//    implementation("com.squareup.moshi:moshi:1.14.0")
+//    implementation("com.squareup.moshi:moshi-adapters:1.15.0")
+//    implementation("com.squareup.moshi:moshi-kotlin:1.14.0")
+//    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

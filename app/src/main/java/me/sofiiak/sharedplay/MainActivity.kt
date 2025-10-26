@@ -6,7 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import dagger.hilt.android.AndroidEntryPoint
-import me.sofiiak.sharedplay.ui.theme.HomeScreen
+import me.sofiiak.sharedplay.ui.HomeScreen
 import me.sofiiak.sharedplay.ui.theme.SharedPlayTheme
 
 

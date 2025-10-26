@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.datasource.dto.PlaylistResponse
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,10 +33,15 @@ class HomeViewModel @Inject constructor(
             UiState.Playlist(
                 id = playlistResponse.id,
                 name = playlistResponse.name,
-                lastUpdated = playlistResponse.last_updated,
+                lastUpdated = formatDate(playlistResponse.last_updated),
             )
         }
     )
+
+    private fun formatDate(date: LocalDateTime): String {
+        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
+        return date.format(formatter)
+    }
 
     // TODO: add 3 states: Loading/Error/Result
     data class UiState(
