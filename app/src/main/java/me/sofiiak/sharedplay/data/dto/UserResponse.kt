@@ -1,4 +1,4 @@
-package me.sofiiak.sharedplay.data.datasource.dto
+package me.sofiiak.sharedplay.data.dto
 
 data class UserResponse(
     val id: String ,

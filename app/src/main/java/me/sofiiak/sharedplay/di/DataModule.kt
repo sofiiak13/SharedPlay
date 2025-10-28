@@ -6,6 +6,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.PlaylistsRepositoryImpl
+import me.sofiiak.sharedplay.data.SongsRepository
+import me.sofiiak.sharedplay.data.SongsRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -15,4 +17,9 @@ abstract class DataModule {
     abstract fun providePlaylistsRepository(
         impl: PlaylistsRepositoryImpl,
     ): PlaylistsRepository
+
+    @Binds
+    abstract fun provideSongsRepository(
+        impl: SongsRepositoryImpl,
+    ): SongsRepository
 }

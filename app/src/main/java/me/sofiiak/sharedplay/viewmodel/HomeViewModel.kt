@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.sofiiak.sharedplay.data.PlaylistsRepository
-import me.sofiiak.sharedplay.data.datasource.dto.PlaylistResponse
+import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -23,7 +23,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = repository
                 .getPlaylistsForUser("-Obxqhr22iL8uHRQlaXM")
-                .toUiState()
+                .getOrNull()
+                ?.toUiState()
+                ?: UiState()
 
         }
     }

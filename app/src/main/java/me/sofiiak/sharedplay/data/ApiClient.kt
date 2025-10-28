@@ -35,4 +35,15 @@ object ApiClient {
     val playlistService: PlaylistService by lazy {
         retrofit.create(PlaylistService::class.java)
     }
+
+    val songService: SongService by lazy {
+        retrofit.create(SongService::class.java)
+    }
+
+    val commentService: CommentService by lazy {
+        retrofit.create(CommentService::class.java)
+    }
+
+
+
 }
