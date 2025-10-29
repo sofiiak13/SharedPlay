@@ -6,6 +6,11 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import me.sofiiak.sharedplay.ui.HomeScreen
 import me.sofiiak.sharedplay.ui.PlaylistDetails
@@ -25,10 +30,31 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SharedPlayTheme {
-//                testDns()
-//                HomeScreen()
-                PlaylistDetails()
+            setContent {
+                val navController = rememberNavController()
+
+                NavHost(
+                    navController = navController,
+                    startDestination = "home"
+                ) {
+                    composable("home") {
+                        HomeScreen(
+                            onPlaylistClick = { playlistId ->
+                                navController.navigate("playlist/$playlistId")
+                            }
+                        )
+                    }
+
+                    composable(
+                        route = "playlist/{playlistId}",
+                        arguments = listOf(navArgument("playlistId") {
+                            type = NavType.StringType
+                        })
+                    ) {
+                        val playlistId = it.arguments?.getString("playlistId") ?: return@composable
+                        PlaylistDetails(playlistId = playlistId, navController= navController)
+                    }
+                }
             }
         }
     }

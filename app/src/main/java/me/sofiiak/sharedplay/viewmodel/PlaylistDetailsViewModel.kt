@@ -1,5 +1,6 @@
 package me.sofiiak.sharedplay.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,26 +18,53 @@ import javax.inject.Inject
 @HiltViewModel
 class PlaylistDetailsViewModel @Inject constructor (
     private val playlistsRepository: PlaylistsRepository,
-    private val songsRepository: SongsRepository,
+    private val songsRepository: SongsRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(UiState())
     val state = _state.asStateFlow()
 
-    init {
+//    // key used by navigation route / arguments (must match the nav arg name)
+//    companion object {
+//        const val NAV_ARG_PLAYLIST_ID = "playlistId"
+//    }
+
+//    init {
+//        // If navigation provided a playlistId, load automatically
+//        savedStateHandle.get<String>(NAV_ARG_PLAYLIST_ID)?.let { id ->
+//            loadPlaylistDetails(id)
+//        }
+//    }
+
+    /**
+     * Public: load playlist details and songs for the given id.
+     * Safe to call multiple times (will update state).
+     */
+    fun loadPlaylistDetails(playlistId: String) {
         viewModelScope.launch {
-            // Load playlist details first
-            val playlist = playlistsRepository
-                .getPlaylistDetails("-ObVJBFFjKK-oMGxREs1")
-                .toPlaylistUiState()
+            // set loading
+            _state.value = _state.value.copy(isLoading= true, error = null)
 
-            _state.value = _state.value.copy(playlist = playlist)
+            try {
+                // Load playlist details
+                val playlist = playlistsRepository
+                    .getPlaylistDetails(playlistId)
+                    .toPlaylistUiState()
 
-            // Then load songs
-            val songs = songsRepository
-                .getSongsFrom("-ObVJBFFjKK-oMGxREs1")
-                .toSongUiState()
+                _state.value = _state.value.copy(playlist = playlist)
 
-            _state.value = _state.value.copy(songs = songs)
+                // Load songs
+                val songs = songsRepository
+                    .getSongsFrom(playlistId)
+                    .toSongUiState()
+
+                _state.value = _state.value.copy(songs = songs, isLoading = false)
+            } catch (t: Throwable) {
+                // handle error
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = t.message ?: "Unknown error"
+                )
+            }
         }
     }
 
@@ -64,7 +92,9 @@ class PlaylistDetailsViewModel @Inject constructor (
     // TODO: add 3 states: Loading/Error/Result
     data class UiState(
         val playlist: Playlist? = null,
-        val songs: List<Song> = emptyList()
+        val songs: List<Song> = emptyList(),
+        val isLoading: Boolean = false,
+        val error: String? = null
     ) {
         data class Playlist(
             val id: String,

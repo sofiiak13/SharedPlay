@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
 
+    kotlin("plugin.serialization") version "2.0.21"
+
     alias(libs.plugins.ksp)
     id("com.google.dagger.hilt.android")
 }
@@ -66,6 +68,7 @@ dependencies {
 
     // DI Hilt
     implementation("com.google.dagger:hilt-android:2.57.1")
+    implementation(libs.androidx.material3)
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
 
     implementation(libs.androidx.lifecycle.viewmodel.kt)
@@ -75,10 +78,13 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.10.0")
 
-//    implementation("com.squareup.moshi:moshi:1.14.0")
-//    implementation("com.squareup.moshi:moshi-adapters:1.15.0")
-//    implementation("com.squareup.moshi:moshi-kotlin:1.14.0")
-//    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+    // Jetpack Compose Navigation
+    implementation("androidx.navigation:navigation-compose:2.8.3")
+    implementation("androidx.navigation:navigation-fragment-ktx:2.8.3")
+    implementation("androidx.navigation:navigation-ui-ktx:2.8.3")
+
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+
 
 
     testImplementation(libs.junit)

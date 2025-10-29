@@ -1,5 +1,6 @@
 package me.sofiiak.sharedplay.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +26,7 @@ import me.sofiiak.sharedplay.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(
+    onPlaylistClick: (String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState = viewModel.state.collectAsStateWithLifecycle()
@@ -66,7 +68,10 @@ fun HomeScreen(
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
                         ),
-                        color = Color.Black
+                        color = Color.Black,
+                        modifier = Modifier.clickable {
+                            onPlaylistClick(playlist.id)
+                        }
                     )
                     Text(
                         text = "Last updated on ${playlist.lastUpdated}",
