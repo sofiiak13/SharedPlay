@@ -1,6 +1,5 @@
 package me.sofiiak.sharedplay.data
 
-import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 import me.sofiiak.sharedplay.data.dto.SongResponse
 import retrofit2.http.*
 
@@ -11,17 +10,17 @@ interface SongService {
         @Path("song_id") songId: String
     ): SongResponse
 
-    @GET("playlist/{playlist_id}/songs")
+    @GET("song/{playlist_id}/songs")
     suspend fun getSongsFrom(
         @Path("playlist_id") playlistId: String
     ): List<SongResponse>
 
     // addSong? addSongToPlaylist?
-    @POST("song/")
+    @POST("song")
     suspend fun createSong(
-        @Query("url") url: String,
         @Query("playlist_id") playlistId: String,
-        @Query("User_id") userId: String
+        @Query("user_id") userId: String,
+        @Query("url") url: String,
     ): SongResponse
 
     // need it for moving to a different playlist

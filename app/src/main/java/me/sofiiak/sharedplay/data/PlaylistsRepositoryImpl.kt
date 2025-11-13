@@ -6,7 +6,6 @@ import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 
 private const val TAG = "PlaylistsRepositoryImpl"
 
-// TODO: wrap all functions into kotlin.Result
 class PlaylistsRepositoryImpl @Inject constructor(
     private val service: PlaylistService,
 ) : PlaylistsRepository {
@@ -18,37 +17,35 @@ class PlaylistsRepositoryImpl @Inject constructor(
             Log.e(TAG, "getPlaylistsForUser: ", error)
         }
 
-    override suspend fun getPlaylistDetails(playlistId: String): PlaylistResponse {
-        try {
-            val playlist = service.getPlaylistDetails(playlistId)
-            return playlist
-        } catch (e: Exception) {
-            // Handle network error, log, retry, or return cached data
-            throw e
+    override suspend fun getPlaylistDetails(playlistId: String): Result<PlaylistResponse> =
+        runCatching {
+            service.getPlaylistDetails(playlistId)
+        }.onFailure { error ->
+            Log.e(TAG, "getPlaylistDetails: ", error)
         }
-    }
 
-    override suspend fun createPlaylist(owner: String, playlist: PlaylistResponse): PlaylistResponse {
-        return service.createPlaylist(owner, playlist)
-    }
+
+    override suspend fun createPlaylist(owner: String, playlist: PlaylistResponse): Result<PlaylistResponse> =
+        runCatching {
+            service.createPlaylist(owner, playlist)
+        }.onFailure { error ->
+            Log.e(TAG, "createPlaylist: ", error)
+        }
+
 
     override suspend fun editPlaylist(
-        playlistId: String, playlist: PlaylistResponse): PlaylistResponse {
-        try {
-            return service.editPlaylist(playlistId, playlist)
-        } catch (e: Exception) {
-            // Handle network error, log, retry, or return cached data
-            throw e
+        playlistId: String, playlist: PlaylistResponse): Result<PlaylistResponse> =
+        runCatching {
+            service.editPlaylist(playlistId, playlist)
+        }.onFailure { error ->
+            Log.e(TAG, "editPlaylist: ", error)
         }
-    }
 
-    override suspend fun deletePlaylist(playlistId: String): String {
-        try {
-            return service.deletePlaylist(playlistId)
-        } catch (e: Exception) {
-            // Handle network error, log, retry, or return cached data
-            throw e
+    override suspend fun deletePlaylist(playlistId: String): Result<String> =
+        runCatching {
+            service.deletePlaylist(playlistId)
+        }.onFailure { error ->
+            Log.e(TAG, "deletePlaylist: ", error)
         }
-    }
 }
 

@@ -1,39 +1,101 @@
 package me.sofiiak.sharedplay.viewmodel
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.SongsRepository
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 import me.sofiiak.sharedplay.data.dto.SongResponse
+import retrofit2.http.Tag
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
+
 @HiltViewModel
-class PlaylistDetailsViewModel @Inject constructor (
+class PlaylistDetailsViewModel @Inject constructor(
     private val playlistsRepository: PlaylistsRepository,
-    private val songsRepository: SongsRepository
+    private val songsRepository: SongsRepository,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(UiState())
+
+    private val playlistId: String = savedStateHandle["playlistId"] ?: ""
+
+    private val _state = MutableStateFlow(
+        PlaylistDetailsViewModel.UiState(
+            toolbar = PlaylistDetailsViewModel.UiState.Toolbar(
+                title = "Playlist Details", // TODO: replace with string resources
+                backButtonContentDescription = "Back" // TODO: replace with string resources
+            )
+        )
+    )
+
     val state = _state.asStateFlow()
 
-//    // key used by navigation route / arguments (must match the nav arg name)
-//    companion object {
-//        const val NAV_ARG_PLAYLIST_ID = "playlistId"
-//    }
 
-//    init {
-//        // If navigation provided a playlistId, load automatically
-//        savedStateHandle.get<String>(NAV_ARG_PLAYLIST_ID)?.let { id ->
-//            loadPlaylistDetails(id)
-//        }
-//    }
+    init {
+        if (validatePlaylistId()) {
+            loadPlaylistDetails(playlistId)
+        }
+    }
+
+    private fun validatePlaylistId(): Boolean {
+        val isValid = playlistId.isNotEmpty()
+        if (isValid.not()) {
+            _state.update {
+                it.copy(error = "Invalid playlist id")
+            }
+        }
+        return isValid
+    }
+
+    fun onUiEvent(event: UiEvent) {
+        when (event) {
+            is UiEvent.AddSongDialogConfirmButtonClick ->
+                viewModelScope.launch {
+
+                    songsRepository.addSong(
+                        url = event.songUrl,
+                        playlistId = playlistId,
+                        userId = "-Odv6YSev5ZNYnDdis9d", // todo: modify this hardcoded value
+                    )
+                    hideAddSongDialog()
+                    _state.update {
+                        it.copy(isLoading = true)
+                    }
+                    loadPlaylistDetails(playlistId)
+                }
+
+            UiEvent.AddSongDialogDismiss -> hideAddSongDialog()
+
+            UiEvent.AddSongButtonClick -> _state.update {
+                it.copy(
+                    addSongDialog = getAddSongDialog()
+                )
+            }
+        }
+    }
+
+    private fun hideAddSongDialog() {
+        _state.update {
+            it.copy(addSongDialog = null)
+        }
+    }
+
+    private fun getAddSongDialog() = UiState.AddSongDialog(
+        title = "Add Song",
+        placeholder = "Enter song URL",
+        buttonConfirm = "Add",
+        buttonCancel = "Cancel",
+    )
 
     /**
      * Public: load playlist details and songs for the given id.
@@ -42,22 +104,34 @@ class PlaylistDetailsViewModel @Inject constructor (
     fun loadPlaylistDetails(playlistId: String) {
         viewModelScope.launch {
             // set loading
-            _state.value = _state.value.copy(isLoading= true, error = null)
+            _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
                 // Load playlist details
                 val playlist = playlistsRepository
                     .getPlaylistDetails(playlistId)
-                    .toPlaylistUiState()
+                    .getOrNull()        // to unwrap Result response
+                    ?.toPlaylistUiState()
 
                 _state.value = _state.value.copy(playlist = playlist)
 
                 // Load songs
                 val songs = songsRepository
                     .getSongsFrom(playlistId)
-                    .toSongUiState()
+                    .getOrNull()   // unwraps the List<SongResponse>
+                    ?.toSongUiState()
+                    ?: emptyList()
 
-                _state.value = _state.value.copy(songs = songs, isLoading = false)
+                if (songs.isNotEmpty()) {
+                    _state.value = _state.value.copy(songs = songs, isLoading = false)
+                    _state.update {
+                      it.copy(songs = songs, isLoading = false)
+                    }
+                } else {
+                    _state.update {
+                        it.copy(error = "No songs have been added yet 🎶")
+                    }
+                }
             } catch (t: Throwable) {
                 // handle error
                 _state.value = _state.value.copy(
@@ -89,22 +163,69 @@ class PlaylistDetailsViewModel @Inject constructor (
                 artist = songResponse.artist,
             )
         }
+
     // TODO: add 3 states: Loading/Error/Result
     data class UiState(
+        val toolbar: Toolbar,
         val playlist: Playlist? = null,
         val songs: List<Song> = emptyList(),
+        val addSongDialog: AddSongDialog? = null,
         val isLoading: Boolean = false,
         val error: String? = null
     ) {
+        data class Toolbar(
+            val title: String,
+            val backButtonContentDescription: String,
+        )
+
         data class Playlist(
             val id: String,
             val name: String,
             val lastUpdated: String,
         )
+
         data class Song(
             val id: String,
             val title: String,
             val artist: String,
         )
+
+        data class AddSongDialog(
+            val title: String,
+            val placeholder: String,
+            val buttonConfirm: String,
+            val buttonCancel: String,
+        )
+
+        companion object {
+            fun preview(): UiState =
+                UiState(
+                    toolbar = Toolbar(
+                        title = "Playlist Details",
+                        backButtonContentDescription = "Back"
+                    ),
+                    songs = listOf(
+                        Song(
+                            id = "1",
+                            title = "Song 1",
+                            artist = "Artist 1"
+                        ),
+                        Song(
+                            id = "2",
+                            title = "Song 2",
+                            artist = "Artist 2"
+                        )
+                    )
+                )
+        }
+    }
+
+    sealed interface UiEvent {
+        data object AddSongButtonClick : UiEvent
+        data object AddSongDialogDismiss : UiEvent
+        data class AddSongDialogConfirmButtonClick(
+            val songUrl: String,
+        ) : UiEvent
+
     }
 }

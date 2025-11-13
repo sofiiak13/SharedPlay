@@ -4,7 +4,7 @@ import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 import retrofit2.http.*
 
 interface PlaylistService {
-    @GET("user/{user_id}/playlists")
+    @GET("playlist/{user_id}/playlists")
     suspend fun getUserPlaylists(
         @Path("user_id") userId: String
     ): List<PlaylistResponse>

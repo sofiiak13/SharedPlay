@@ -1,5 +1,6 @@
 package me.sofiiak.sharedplay.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,6 +13,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
+private const val TAG = "HomeViewModel"
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: PlaylistsRepository,
@@ -20,14 +22,7 @@ class HomeViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            _state.value = repository
-                .getPlaylistsForUser("-OciZkhinnFG-I-2W_ig")
-                .getOrNull()
-                ?.toUiState()
-                ?: UiState()
-
-        }
+        loadPlaylists()
     }
 
     private fun List<PlaylistResponse>.toUiState() = UiState(
@@ -40,6 +35,39 @@ class HomeViewModel @Inject constructor(
         }
     )
 
+    fun loadPlaylists() {
+        viewModelScope.launch {
+            val result = repository.getPlaylistsForUser(userId = "-Odv6YSev5ZNYnDdis9d")
+            result.onSuccess { playlists ->
+                _state.value = playlists.toUiState()
+            }.onFailure {
+                Log.e(TAG,"Couldn't load playlists")
+                _state.value = _state.value.copy(error = "Couldn't load playlists")
+            }
+        }
+    }
+
+    fun deletePlaylist(id: String) {
+        viewModelScope.launch {
+            repository.deletePlaylist(id)
+                .onSuccess {
+                    loadPlaylists() // refresh list
+                }
+                .onFailure {
+                    // show error message
+                }
+        }
+    }
+
+    fun addSongToPlaylist(id: String) {
+        // navigate or open UI for adding song
+    }
+
+    fun editPlaylist(id: String) {
+        // trigger navigation to edit screen
+    }
+
+
     private fun formatDate(date: LocalDateTime): String {
         val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
         return date.format(formatter)
@@ -48,6 +76,7 @@ class HomeViewModel @Inject constructor(
     // TODO: add 3 states: Loading/Error/Result
     data class UiState(
         val playlists: List<Playlist> = emptyList(),
+        val error: String? = null
     ) {
         data class Playlist(
             val id: String,

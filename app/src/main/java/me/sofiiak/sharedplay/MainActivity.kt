@@ -17,7 +17,7 @@ import me.sofiiak.sharedplay.ui.PlaylistDetails
 import me.sofiiak.sharedplay.ui.theme.SharedPlayTheme
 import java.net.InetAddress
 import java.net.UnknownHostException
-
+private const val TAG = "MainActivity"
 
 /**
  * Kind of like my main.
@@ -51,8 +51,7 @@ class MainActivity : ComponentActivity() {
                             type = NavType.StringType
                         })
                     ) {
-                        val playlistId = it.arguments?.getString("playlistId") ?: return@composable
-                        PlaylistDetails(playlistId = playlistId, navController= navController)
+                        PlaylistDetails(navController = navController)
                     }
                 }
             }
