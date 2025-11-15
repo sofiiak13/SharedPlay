@@ -1,6 +1,5 @@
 package me.sofiiak.sharedplay.ui
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -28,7 +27,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,35 +34,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import me.sofiiak.sharedplay.viewmodel.PlaylistDetailsViewModel
 
 private const val TAG = "PlaylistDetails"
 
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistDetails(
-//    playlistId: String,
     navController: NavController,
     viewModel: PlaylistDetailsViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.state.collectAsStateWithLifecycle().value
 
-//    LaunchedEffect(playlistId) {
-//        viewModel.loadPlaylistDetails(playlistId)
-//    }
 
     PlaylistDetailsContent(
         uiState = uiState,
-        onToolbarBackClick = { navController.popBackStack() },
+        navController = navController,
         uiEvent = viewModel::onUiEvent,
     )
 }
@@ -73,8 +65,8 @@ fun PlaylistDetails(
 @Composable
 private fun PlaylistDetailsContent(
     uiState: PlaylistDetailsViewModel.UiState,
+    navController: NavController,
     uiEvent: (PlaylistDetailsViewModel.UiEvent) -> Unit,
-    onToolbarBackClick: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -83,7 +75,7 @@ private fun PlaylistDetailsContent(
                     Text(uiState.playlist?.name ?: "Playlist") // use ui state
                 },
                 navigationIcon = {
-                    IconButton(onClick = onToolbarBackClick) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = uiState.toolbar.backButtonContentDescription,
@@ -103,15 +95,26 @@ private fun PlaylistDetailsContent(
                     )
 
                     Icon(
+                        modifier = Modifier
+                            .clickable {
+                                uiEvent(
+                                    PlaylistDetailsViewModel.UiEvent.DeletePlaylistButtonClick
+                                )
+                            },
                         imageVector = Icons.Filled.Delete,
                         contentDescription = null,
                     )
 
                     Icon(
+                        modifier = Modifier
+                            .clickable {
+                                uiEvent(
+                                    PlaylistDetailsViewModel.UiEvent.EditPlaylistNameButtonClick
+                                )
+                            },
                         imageVector = Icons.Filled.Edit,
                         contentDescription = null,
                     )
-
                 }
             )
         }
@@ -140,22 +143,7 @@ private fun PlaylistDetailsContent(
                         color = Color.DarkGray
                     )
 
-//                    Text(
-//                        text = "Error: $error",
-//                        color = Color.Red,
-//                        modifier = Modifier.align(Alignment.Center)
-//                    )
                 }
-
-//                uiState.songs.isEmpty() -> {
-//                    Text(
-//                        text = "No songs have been added yet 🎶",  // use ui state
-//                        fontSize = 18.sp,
-//                        fontWeight = FontWeight.Medium,
-//                        modifier = Modifier.align(Alignment.Center),
-//                        color = Color.DarkGray
-//                    )
-//                }
 
                 else -> {
                     LazyColumn(
@@ -179,6 +167,21 @@ private fun PlaylistDetailsContent(
             uiEvent = uiEvent,
         )
     }
+
+    uiState.deletePlaylistDialog?.let { deletePlaylistDialog ->
+        DeletePlaylistDialog(
+            uiState = deletePlaylistDialog,
+            uiEvent = uiEvent,
+        )
+    }
+
+    uiState.editPlaylistNameDialog?.let { editPlaylistNameDialog ->
+        EditPlaylistNameDialog(
+            uiState = editPlaylistNameDialog,
+            uiEvent = uiEvent,
+        )
+    }
+
 }
 
 @Composable
@@ -258,13 +261,104 @@ private fun AddSongDialog(
     )
 }
 
+@Composable
+private fun DeletePlaylistDialog(
+    uiState: PlaylistDetailsViewModel.UiState.DeletePlaylistDialog,
+    uiEvent: (PlaylistDetailsViewModel.UiEvent) -> Unit,
+) {
+
+
+    AlertDialog(
+        onDismissRequest = {
+            uiEvent(
+                PlaylistDetailsViewModel.UiEvent.DeletePlaylistDialogDismiss
+            )
+        },
+        title = { Text(uiState.title) },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    uiEvent(
+                        PlaylistDetailsViewModel.UiEvent.DeletePlaylistConfirmButtonClick
+                    )
+
+                }
+            ) {
+                Text(uiState.buttonConfirm)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    uiEvent(
+                        PlaylistDetailsViewModel.UiEvent.DeletePlaylistDialogDismiss
+                    )
+                }
+            ) {
+                Text(uiState.buttonCancel)
+            }
+        }
+    )
+}
+
+
+@Composable
+private fun EditPlaylistNameDialog(
+    uiState: PlaylistDetailsViewModel.UiState.EditPlaylistNameDialog,
+    uiEvent: (PlaylistDetailsViewModel.UiEvent) -> Unit,
+) {
+    var newName by remember { mutableStateOf("") }
+
+
+    AlertDialog(
+        onDismissRequest = {
+            uiEvent(
+                PlaylistDetailsViewModel.UiEvent.EditPlaylistNameDismiss
+            )
+        },
+        title = { Text(uiState.title) },
+        text = {
+            TextField(
+                value = newName,
+                onValueChange = { newName = it },
+                placeholder = { Text(uiState.placeholder) },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    uiEvent(
+                        PlaylistDetailsViewModel.UiEvent.EditPlaylistNameConfirmButtonClick(
+                            newName = newName
+                        )
+                    )
+                }
+            ) {
+                Text(uiState.buttonConfirm)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    uiEvent(
+                        PlaylistDetailsViewModel.UiEvent.EditPlaylistNameDismiss
+                    )
+                }
+            ) {
+                Text(uiState.buttonCancel)
+            }
+        }
+    )
+}
+
 @Preview
 @Composable
 fun PlaylistDetailsPreview() {
     PlaylistDetailsContent(
         uiState = PlaylistDetailsViewModel.UiState.preview(),
         uiEvent = {},
-        onToolbarBackClick = {},
+        navController = NavController(LocalContext.current)
     )
 }
 

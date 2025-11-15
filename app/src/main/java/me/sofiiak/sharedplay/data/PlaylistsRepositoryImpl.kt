@@ -3,11 +3,12 @@ package me.sofiiak.sharedplay.data
 import android.util.Log
 import jakarta.inject.Inject
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
+import me.sofiiak.sharedplay.data.dto.PlaylistUpdate
 
 private const val TAG = "PlaylistsRepositoryImpl"
 
 class PlaylistsRepositoryImpl @Inject constructor(
-    private val service: PlaylistService,
+    private val service: Service,
 ) : PlaylistsRepository {
 
     override suspend fun getPlaylistsForUser(userId: String): Result<List<PlaylistResponse>> =
@@ -25,7 +26,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
         }
 
 
-    override suspend fun createPlaylist(owner: String, playlist: PlaylistResponse): Result<PlaylistResponse> =
+    override suspend fun createPlaylist(owner: String, playlist: PlaylistUpdate): Result<PlaylistResponse> =
         runCatching {
             service.createPlaylist(owner, playlist)
         }.onFailure { error ->
@@ -34,7 +35,7 @@ class PlaylistsRepositoryImpl @Inject constructor(
 
 
     override suspend fun editPlaylist(
-        playlistId: String, playlist: PlaylistResponse): Result<PlaylistResponse> =
+        playlistId: String, playlist: PlaylistUpdate): Result<PlaylistResponse> =
         runCatching {
             service.editPlaylist(playlistId, playlist)
         }.onFailure { error ->

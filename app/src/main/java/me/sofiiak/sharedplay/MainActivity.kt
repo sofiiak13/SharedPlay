@@ -39,14 +39,12 @@ class MainActivity : ComponentActivity() {
                 ) {
                     composable("home") {
                         HomeScreen(
-                            onPlaylistClick = { playlistId ->
-                                navController.navigate("playlist/$playlistId")
-                            }
+                            navController = navController
                         )
                     }
 
                     composable(
-                        route = "playlist/{playlistId}",
+                        route = "playlist_details/{playlistId}",
                         arguments = listOf(navArgument("playlistId") {
                             type = NavType.StringType
                         })

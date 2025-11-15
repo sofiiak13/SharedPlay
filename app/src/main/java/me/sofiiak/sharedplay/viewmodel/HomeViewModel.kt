@@ -4,11 +4,14 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
+import me.sofiiak.sharedplay.data.dto.PlaylistUpdate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -16,17 +19,24 @@ import javax.inject.Inject
 private const val TAG = "HomeViewModel"
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: PlaylistsRepository,
+    private val playlistsRepository: PlaylistsRepository,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(UiState())
+    private val _state = MutableStateFlow(
+        UiState(
+            toolbar = UiState.Toolbar(
+                    title = "Home",
+                    backButtonContentDescription = "Back"
+            )
+        )
+    )
     val state = _state.asStateFlow()
 
-    init {
-        loadPlaylists()
-    }
-
     private fun List<PlaylistResponse>.toUiState() = UiState(
-        this.map { playlistResponse ->
+        toolbar = UiState.Toolbar(
+            title = "Home",
+            backButtonContentDescription = "Back"
+        ),
+        playlists = this.map { playlistResponse ->
             UiState.Playlist(
                 id = playlistResponse.id,
                 name = playlistResponse.name,
@@ -35,9 +45,53 @@ class HomeViewModel @Inject constructor(
         }
     )
 
-    fun loadPlaylists() {
+
+    fun onHomeUiEvent(event: UiEvent) {
+        when (event) {
+            is UiEvent.AddPlaylistConfirmButtonClick ->
+                viewModelScope.launch {
+                    val newPlaylist = PlaylistUpdate(
+                        name = event.newName,
+                        owner = "-Odv6YSev5ZNYnDdis9d"
+                    )
+                    playlistsRepository.createPlaylist(
+                        "-Odv6YSev5ZNYnDdis9d",
+                        newPlaylist)
+                    hideAddPlaylistDialog()
+                    _state.update {
+                        it.copy(isLoading = true)
+                    }
+                    loadPlaylists()
+                }
+
+            UiEvent.AddPlaylistDialogDismiss -> hideAddPlaylistDialog()
+
+            UiEvent.AddPlaylistButtonClick -> _state.update {
+                it.copy(
+                    addPlaylistDialog = getAddPlaylistDialog()
+                )
+            }
+
+            UiEvent.LoadPlaylists -> loadPlaylists()
+        }
+    }
+
+    private fun hideAddPlaylistDialog() {
+        _state.update {
+            it.copy(addPlaylistDialog = null)
+        }
+    }
+
+    private fun getAddPlaylistDialog() = UiState.AddPlaylistDialog(
+        title = "Create new playlist",
+        placeholder = "Enter playlist name",
+        buttonConfirm = "Create",
+        buttonCancel = "Cancel",
+    )
+
+    private fun loadPlaylists() {
         viewModelScope.launch {
-            val result = repository.getPlaylistsForUser(userId = "-Odv6YSev5ZNYnDdis9d")
+            val result = playlistsRepository.getPlaylistsForUser(userId = "-Odv6YSev5ZNYnDdis9d")
             result.onSuccess { playlists ->
                 _state.value = playlists.toUiState()
             }.onFailure {
@@ -47,9 +101,10 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+
     fun deletePlaylist(id: String) {
         viewModelScope.launch {
-            repository.deletePlaylist(id)
+            playlistsRepository.deletePlaylist(id)
                 .onSuccess {
                     loadPlaylists() // refresh list
                 }
@@ -59,29 +114,66 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun addSongToPlaylist(id: String) {
-        // navigate or open UI for adding song
-    }
-
-    fun editPlaylist(id: String) {
-        // trigger navigation to edit screen
-    }
-
-
     private fun formatDate(date: LocalDateTime): String {
         val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
         return date.format(formatter)
     }
 
-    // TODO: add 3 states: Loading/Error/Result
     data class UiState(
+        val toolbar: Toolbar,
         val playlists: List<Playlist> = emptyList(),
+        val addPlaylistDialog: AddPlaylistDialog? = null,
+        val isLoading: Boolean = false,
         val error: String? = null
     ) {
+        data class Toolbar(
+            val title: String,
+            val backButtonContentDescription: String,
+        )
+
         data class Playlist(
             val id: String,
             val name: String,
             val lastUpdated: String,
         )
+
+        data class AddPlaylistDialog(
+            val title: String,
+            val placeholder: String,
+            val buttonConfirm: String,
+            val buttonCancel: String,
+        )
+
+        companion object {
+            fun preview(): UiState =
+                UiState(
+                    toolbar = Toolbar(
+                        title = "Home",
+                        backButtonContentDescription = "Back"
+                    ),
+                    playlists = listOf(
+                        Playlist(
+                            id = "1",
+                            name = "Playlist 1",
+                            lastUpdated = "Apr 11, 2025"
+                        ),
+                        Playlist(
+                            id = "2",
+                            name = "Playlist 2",
+                            lastUpdated = "Sep 30, 2025"
+                        )
+                    )
+                )
+        }
+    }
+
+    sealed interface UiEvent {
+        data object LoadPlaylists : UiEvent
+        data object AddPlaylistButtonClick : UiEvent
+        data object AddPlaylistDialogDismiss : UiEvent
+        data class AddPlaylistConfirmButtonClick(
+            val newName: String,
+        ) : UiEvent
+
     }
 }

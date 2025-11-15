@@ -1,7 +1,5 @@
 package me.sofiiak.sharedplay.viewmodel
 
-import android.content.Context
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,8 +11,8 @@ import kotlinx.coroutines.launch
 import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.SongsRepository
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
+import me.sofiiak.sharedplay.data.dto.PlaylistUpdate
 import me.sofiiak.sharedplay.data.dto.SongResponse
-import retrofit2.http.Tag
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -81,6 +79,49 @@ class PlaylistDetailsViewModel @Inject constructor(
                     addSongDialog = getAddSongDialog()
                 )
             }
+
+            is UiEvent.DeletePlaylistConfirmButtonClick -> viewModelScope.launch {
+
+                playlistsRepository.deletePlaylist(
+                    playlistId = playlistId,
+                )
+                hideDeletePlaylistDialog()
+                _state.update {
+                    it.copy(isLoading = true)
+                }
+            }
+
+            UiEvent.DeletePlaylistDialogDismiss -> hideDeletePlaylistDialog()
+
+            UiEvent.DeletePlaylistButtonClick -> _state.update {
+                it.copy(
+                    deletePlaylistDialog = getDeletePlaylistDialog()
+                )
+            }
+
+            is UiEvent.EditPlaylistNameConfirmButtonClick ->  viewModelScope.launch {
+
+                playlistsRepository.editPlaylist(
+                    playlistId = playlistId,
+                    playlist = PlaylistUpdate(
+                        name = event.newName,
+                    )
+                )
+                hideEditPlaylistNameDialog()
+                _state.update {
+                    it.copy(isLoading = true)
+                }
+                loadPlaylistDetails(playlistId)
+            }
+
+
+            UiEvent.EditPlaylistNameButtonClick ->  _state.update {
+                it.copy(
+                    editPlaylistNameDialog = getEditPlaylistNameDialog()
+                )
+            }
+
+            UiEvent.EditPlaylistNameDismiss -> hideEditPlaylistNameDialog()
         }
     }
 
@@ -94,6 +135,32 @@ class PlaylistDetailsViewModel @Inject constructor(
         title = "Add Song",
         placeholder = "Enter song URL",
         buttonConfirm = "Add",
+        buttonCancel = "Cancel",
+    )
+
+    private fun hideDeletePlaylistDialog() {
+        _state.update {
+            it.copy(deletePlaylistDialog = null)
+        }
+    }
+
+    private fun getDeletePlaylistDialog() = UiState.DeletePlaylistDialog(
+        title = "Are you sure you want to delete this playlist?",
+        buttonConfirm = "Delete",
+        buttonCancel = "Cancel",
+    )
+
+
+    private fun hideEditPlaylistNameDialog() {
+        _state.update {
+            it.copy(editPlaylistNameDialog = null)
+        }
+    }
+
+    private fun getEditPlaylistNameDialog() = UiState.EditPlaylistNameDialog(
+        title = "Rename Playlist",
+        placeholder = "Enter new playlist name",
+        buttonConfirm = "Rename",
         buttonCancel = "Cancel",
     )
 
@@ -118,7 +185,7 @@ class PlaylistDetailsViewModel @Inject constructor(
                 // Load songs
                 val songs = songsRepository
                     .getSongsFrom(playlistId)
-                    .getOrNull()   // unwraps the List<SongResponse>
+                    .getOrNull()
                     ?.toSongUiState()
                     ?: emptyList()
 
@@ -129,7 +196,7 @@ class PlaylistDetailsViewModel @Inject constructor(
                     }
                 } else {
                     _state.update {
-                        it.copy(error = "No songs have been added yet 🎶")
+                        it.copy(error = "No songs have been added yet 🎶", isLoading = false)
                     }
                 }
             } catch (t: Throwable) {
@@ -164,12 +231,13 @@ class PlaylistDetailsViewModel @Inject constructor(
             )
         }
 
-    // TODO: add 3 states: Loading/Error/Result
     data class UiState(
         val toolbar: Toolbar,
         val playlist: Playlist? = null,
         val songs: List<Song> = emptyList(),
         val addSongDialog: AddSongDialog? = null,
+        val deletePlaylistDialog: DeletePlaylistDialog? = null,
+        val editPlaylistNameDialog: EditPlaylistNameDialog? = null,
         val isLoading: Boolean = false,
         val error: String? = null
     ) {
@@ -191,6 +259,19 @@ class PlaylistDetailsViewModel @Inject constructor(
         )
 
         data class AddSongDialog(
+            val title: String,
+            val placeholder: String,
+            val buttonConfirm: String,
+            val buttonCancel: String,
+        )
+
+        data class DeletePlaylistDialog(
+            val title: String,
+            val buttonConfirm: String,
+            val buttonCancel: String,
+        )
+
+        data class EditPlaylistNameDialog(
             val title: String,
             val placeholder: String,
             val buttonConfirm: String,
@@ -225,6 +306,16 @@ class PlaylistDetailsViewModel @Inject constructor(
         data object AddSongDialogDismiss : UiEvent
         data class AddSongDialogConfirmButtonClick(
             val songUrl: String,
+        ) : UiEvent
+
+        data object DeletePlaylistButtonClick : UiEvent
+        data object DeletePlaylistDialogDismiss : UiEvent
+        data object DeletePlaylistConfirmButtonClick : UiEvent
+
+        data object EditPlaylistNameButtonClick : UiEvent
+        data object EditPlaylistNameDismiss : UiEvent
+        data class EditPlaylistNameConfirmButtonClick(
+            val newName: String,
         ) : UiEvent
 
     }

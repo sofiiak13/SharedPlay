@@ -6,7 +6,7 @@ import me.sofiiak.sharedplay.data.dto.SongResponse
 
 private const val TAG = "SongsRepositoryImpl"
 class SongsRepositoryImpl @Inject constructor(
-    private val service: SongService
+    private val service: Service
 ) : SongsRepository {
 
     override suspend fun getSongsFrom(playlistId: String): Result<List<SongResponse>> =
