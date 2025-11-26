@@ -26,9 +26,9 @@ class PlaylistsRepositoryImpl @Inject constructor(
         }
 
 
-    override suspend fun createPlaylist(owner: String, playlist: PlaylistUpdate): Result<PlaylistResponse> =
+    override suspend fun createPlaylist(playlist: PlaylistResponse): Result<PlaylistResponse> =
         runCatching {
-            service.createPlaylist(owner, playlist)
+            service.createPlaylist(playlist)
         }.onFailure { error ->
             Log.e(TAG, "createPlaylist: ", error)
         }

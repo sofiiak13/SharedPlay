@@ -26,8 +26,7 @@ interface Service {
 
     @POST("playlist")
     suspend fun createPlaylist(
-        @Query("owner") owner: String,
-        @Body playlist: PlaylistUpdate
+        @Body playlist: PlaylistResponse
     ): PlaylistResponse
 
     @PATCH("playlist/{playlist_id}")
@@ -73,51 +72,62 @@ interface Service {
     ) : String
 
 
-    @POST("/comment/")
-    suspend fun createComment(
-        @Query("content") content: String,
-        @Query("parentId") parentId: String,
-        @Query("userId") userId: String
-    ): CommentResponse
-
-    @GET("/comment/{comment_id}")
+    // do I need it individually?
+    @GET("comment/{comment_id}")
     suspend fun getComment(
         @Path("comment_id") commentId: String
     ): CommentResponse
 
-    @PATCH("/comment/{comment_id}")
-    suspend fun updateComment(
-        @Path("comment_id") commentId: String,
-        @Query("content") content: String
+    @GET("comment/{song_id}/comments")
+    suspend fun getAllComments(
+        @Path("song_id") songId: String
+    ): List<CommentResponse>
+
+    @GET("comment/{song_id}/comment/latest")
+    suspend fun getLatestComment(
+        @Path("song_id") songId: String
     ): CommentResponse
 
-    @DELETE("/comment/{comment_id}")
+    @POST("comment")
+    suspend fun createComment(
+        @Body comment: CommentResponse,
+    ): CommentResponse
+
+    @PATCH("comment/{comment_id}")
+    suspend fun updateComment(
+        @Path("comment_id") commentId: String,
+        @Query("updated_text") content: String
+    ): CommentResponse
+
+    @DELETE("comment/{comment_id}")
     suspend fun deleteComment(
         @Path("comment_id") commentId: String
     ): String
 
 
-    @POST("/reaction/")
+    @POST("reaction")
     suspend fun createReaction(
-        @Query("commentId") commentId: String,
-        @Query("userId") userId: String,
-        @Query("reactionType") reactionType: String
+        @Body reaction: ReactionResponse,
     ): ReactionResponse
 
-    @GET("/reaction/{reaction_id}")
+    @GET("reaction/{reaction_id}")
     suspend fun getReaction(
         @Path("reaction_id") reactionId: String
     ): ReactionResponse
 
-    @PATCH("/reaction/{reaction_id}")
+    @GET("{comment_id}/reactions")
+    suspend fun getReactions(
+        @Path("comment_id") commentId: String
+    ): List<ReactionResponse>
+
+    @PATCH("reaction/{reaction_id}")
     suspend fun updateReaction(
         @Path("reaction_id") reactionId: String,
         @Query("reactionType") reactionType: String
     ): ReactionResponse
 
-    @DELETE("/reaction/{reaction_id}")
+    @DELETE("reaction/{reaction_id}")
     suspend fun deleteReaction(
         @Path("reaction_id") reactionId: String
     ): String
-
 }

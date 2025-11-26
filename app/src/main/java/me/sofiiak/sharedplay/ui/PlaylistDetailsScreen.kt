@@ -2,8 +2,10 @@ package me.sofiiak.sharedplay.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,7 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +48,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import me.sofiiak.sharedplay.viewmodel.PlaylistDetailsViewModel
 
-private const val TAG = "PlaylistDetails"
 
 @Composable
 fun PlaylistDetails(
@@ -153,7 +156,7 @@ private fun PlaylistDetailsContent(
                     ) {
 
                         items(uiState.songs) { song ->
-                            SongCard(song)
+                            SongCard(song, navController)
                         }
                     }
                 }
@@ -185,28 +188,70 @@ private fun PlaylistDetailsContent(
 }
 
 @Composable
-private fun SongCard(song: PlaylistDetailsViewModel.UiState.Song) {
+private fun SongCard(song: PlaylistDetailsViewModel.UiState.Song, navController: NavController) {
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 6.dp)
+            .clickable {
+            navController.navigate(
+                "playlist_details/${song.playlistId}/song/${song.id}"
+            )
+        },
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = song.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            Text(
-                text = "by ${song.artist}",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.DarkGray,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Text(
+                    text = "by ${song.artist}", // todo: use song class for this
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.End
+            ) {
+                if (song.lastComment != null) {
+                    val comment = song.lastComment
+
+                    Text(
+                        text = "${comment.author}:",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    Text(
+                        text = comment.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontStyle = FontStyle.Italic,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (song.totalComments > 1) {
+                        Text(
+                            text = "+ ${song.totalComments - 1} comments",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -281,7 +326,6 @@ private fun DeletePlaylistDialog(
                     uiEvent(
                         PlaylistDetailsViewModel.UiEvent.DeletePlaylistConfirmButtonClick
                     )
-
                 }
             ) {
                 Text(uiState.buttonConfirm)

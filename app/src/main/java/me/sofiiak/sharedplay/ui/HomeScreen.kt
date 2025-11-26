@@ -88,15 +88,7 @@ private fun HomeScreenContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Playlist") // use ui state
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = uiState.toolbar.backButtonContentDescription,
-                        )
-                    }
+                    Text("Home") // use ui state
                 },
                 actions = {
                     Icon(

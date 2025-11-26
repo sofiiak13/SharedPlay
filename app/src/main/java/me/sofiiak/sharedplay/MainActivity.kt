@@ -51,10 +51,19 @@ class MainActivity : ComponentActivity() {
                     ) {
                         PlaylistDetails(navController = navController)
                     }
+
+                    composable (
+                        route ="playlist_details/{playlistId}/song/{songId}" ,
+                        arguments = listOf(
+                            navArgument("playlistId") { type = NavType.StringType },
+                            navArgument("songId") { type = NavType.StringType }
+                        )
+                    ){
+                        CommentSection(navController = navController)
+                    }
                 }
             }
         }
-    }
 
     private fun testDns() {
         Thread {

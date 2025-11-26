@@ -8,13 +8,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import me.sofiiak.sharedplay.data.CommentSectionRepository
 import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.SongsRepository
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 import me.sofiiak.sharedplay.data.dto.PlaylistUpdate
 import me.sofiiak.sharedplay.data.dto.SongResponse
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import me.sofiiak.sharedplay.data.formatDate
 import javax.inject.Inject
 
 
@@ -22,14 +22,15 @@ import javax.inject.Inject
 class PlaylistDetailsViewModel @Inject constructor(
     private val playlistsRepository: PlaylistsRepository,
     private val songsRepository: SongsRepository,
+    private val commentsRepository: CommentSectionRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val playlistId: String = savedStateHandle["playlistId"] ?: ""
 
     private val _state = MutableStateFlow(
-        PlaylistDetailsViewModel.UiState(
-            toolbar = PlaylistDetailsViewModel.UiState.Toolbar(
+        UiState(
+            toolbar = UiState.Toolbar(
                 title = "Playlist Details", // TODO: replace with string resources
                 backButtonContentDescription = "Back" // TODO: replace with string resources
             )
@@ -37,7 +38,6 @@ class PlaylistDetailsViewModel @Inject constructor(
     )
 
     val state = _state.asStateFlow()
-
 
     init {
         if (validatePlaylistId()) {
@@ -177,7 +177,7 @@ class PlaylistDetailsViewModel @Inject constructor(
                 // Load playlist details
                 val playlist = playlistsRepository
                     .getPlaylistDetails(playlistId)
-                    .getOrNull()        // to unwrap Result response
+                    .getOrNull()
                     ?.toPlaylistUiState()
 
                 _state.value = _state.value.copy(playlist = playlist)
@@ -216,18 +216,24 @@ class PlaylistDetailsViewModel @Inject constructor(
             lastUpdated = formatDate(last_updated)
         )
 
-    private fun formatDate(date: LocalDateTime): String {
-        // TODO:  move to a separate DateTimeUtility
-        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
-        return date.format(formatter)
-    }
 
-    private fun List<SongResponse>.toSongUiState() =
+    private suspend fun List<SongResponse>.toSongUiState() =
         this.map { songResponse ->
+            val lastComment = commentsRepository.getLatestComment(songResponse.id)
+                .getOrNull()
             UiState.Song(
                 id = songResponse.id,
                 title = songResponse.title,
                 artist = songResponse.artist,
+                playlistId = songResponse.playlist_id,
+                lastComment = lastComment?.let {
+                    UiState.Comment(
+                        id = it.id,
+                        text = it.text,
+                        author = it.author
+                    )
+                },
+                totalComments = commentsRepository.getCommentsCount(songResponse.id)
             )
         }
 
@@ -256,6 +262,15 @@ class PlaylistDetailsViewModel @Inject constructor(
             val id: String,
             val title: String,
             val artist: String,
+            val playlistId: String,
+            val lastComment: Comment?,
+            val totalComments: Int = 0,
+        )
+
+        data class Comment(
+            val id: String,
+            val text: String,
+            val author: String
         )
 
         data class AddSongDialog(
@@ -289,12 +304,27 @@ class PlaylistDetailsViewModel @Inject constructor(
                         Song(
                             id = "1",
                             title = "Song 1",
-                            artist = "Artist 1"
+                            artist = "Artist 1",
+                            playlistId = "",
+                            lastComment = Comment(
+                                id = "1",
+                                text = "This is a comment",
+                                author = "Author 1"
+                            ),
+                            totalComments = 10
                         ),
                         Song(
                             id = "2",
                             title = "Song 2",
-                            artist = "Artist 2"
+                            artist = "Artist 2",
+                            playlistId = "",
+                            lastComment = Comment(
+                                id = "2",
+                                text = "This is another comment very very very long comment." +
+                                        "It's really reaaaalllly long and boring!!!!",
+                                author = "Author 2"
+                            ),
+                            totalComments = 1
                         )
                     )
                 )

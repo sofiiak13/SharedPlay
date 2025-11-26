@@ -70,6 +70,7 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.57.1")
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.ui.text)
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
 
     implementation(libs.androidx.lifecycle.viewmodel.kt)

@@ -4,16 +4,13 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
-import me.sofiiak.sharedplay.data.dto.PlaylistUpdate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import me.sofiiak.sharedplay.data.formatDate
 import javax.inject.Inject
 
 private const val TAG = "HomeViewModel"
@@ -22,20 +19,11 @@ class HomeViewModel @Inject constructor(
     private val playlistsRepository: PlaylistsRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
-        UiState(
-            toolbar = UiState.Toolbar(
-                    title = "Home",
-                    backButtonContentDescription = "Back"
-            )
-        )
+        UiState()
     )
     val state = _state.asStateFlow()
 
     private fun List<PlaylistResponse>.toUiState() = UiState(
-        toolbar = UiState.Toolbar(
-            title = "Home",
-            backButtonContentDescription = "Back"
-        ),
         playlists = this.map { playlistResponse ->
             UiState.Playlist(
                 id = playlistResponse.id,
@@ -50,13 +38,12 @@ class HomeViewModel @Inject constructor(
         when (event) {
             is UiEvent.AddPlaylistConfirmButtonClick ->
                 viewModelScope.launch {
-                    val newPlaylist = PlaylistUpdate(
+                    val newPlaylist = PlaylistResponse(
+                        id = "",
                         name = event.newName,
                         owner = "-Odv6YSev5ZNYnDdis9d"
                     )
-                    playlistsRepository.createPlaylist(
-                        "-Odv6YSev5ZNYnDdis9d",
-                        newPlaylist)
+                    playlistsRepository.createPlaylist(newPlaylist)
                     hideAddPlaylistDialog()
                     _state.update {
                         it.copy(isLoading = true)
@@ -102,35 +89,12 @@ class HomeViewModel @Inject constructor(
     }
 
 
-    fun deletePlaylist(id: String) {
-        viewModelScope.launch {
-            playlistsRepository.deletePlaylist(id)
-                .onSuccess {
-                    loadPlaylists() // refresh list
-                }
-                .onFailure {
-                    // show error message
-                }
-        }
-    }
-
-    private fun formatDate(date: LocalDateTime): String {
-        val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
-        return date.format(formatter)
-    }
-
     data class UiState(
-        val toolbar: Toolbar,
         val playlists: List<Playlist> = emptyList(),
         val addPlaylistDialog: AddPlaylistDialog? = null,
         val isLoading: Boolean = false,
         val error: String? = null
     ) {
-        data class Toolbar(
-            val title: String,
-            val backButtonContentDescription: String,
-        )
-
         data class Playlist(
             val id: String,
             val name: String,
@@ -147,10 +111,6 @@ class HomeViewModel @Inject constructor(
         companion object {
             fun preview(): UiState =
                 UiState(
-                    toolbar = Toolbar(
-                        title = "Home",
-                        backButtonContentDescription = "Back"
-                    ),
                     playlists = listOf(
                         Playlist(
                             id = "1",
