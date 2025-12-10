@@ -2,6 +2,7 @@ package me.sofiiak.sharedplay.data
 
 import android.util.Log
 import jakarta.inject.Inject
+import me.sofiiak.sharedplay.data.dto.InviteResponse
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 import me.sofiiak.sharedplay.data.dto.PlaylistUpdate
 
@@ -44,9 +45,29 @@ class PlaylistsRepositoryImpl @Inject constructor(
 
     override suspend fun deletePlaylist(playlistId: String): Result<String> =
         runCatching {
-            service.deletePlaylist(playlistId)
+            service.deletePlaylist(playlistId).message
         }.onFailure { error ->
             Log.e(TAG, "deletePlaylist: ", error)
         }
-}
 
+    override suspend fun createInvite(playlistId: String, userId: String): Result<InviteResponse> =
+        runCatching {
+            service.createInvite(playlistId, userId)
+        }.onFailure { error ->
+            Log.e(TAG, "createInvite: ", error)
+        }
+
+    override suspend fun validateInvite(inviteId: String): Result<InviteResponse> =
+        runCatching {
+            service.validateInvite(inviteId)
+        }.onFailure { error ->
+            Log.e(TAG, "validateInvite: ", error)
+        }
+
+    override suspend fun addEditor(playlistId: String, userId: String): Result<String> =
+        runCatching {
+            service.addEditor(playlistId, userId).message
+        }.onFailure { error ->
+            Log.e(TAG, "addEditor: ", error)
+        }
+}

@@ -3,7 +3,9 @@ package me.sofiiak.sharedplay.data
 import com.google.gson.*
 import java.lang.reflect.Type
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 class LocalDateTimeAdapter : JsonDeserializer<LocalDateTime>, JsonSerializer<LocalDateTime> {
 
@@ -14,11 +16,15 @@ private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
         typeOfT: Type?,
         context: JsonDeserializationContext?
     ): LocalDateTime? {
-        // Handle null values from JSON gracefully
-        return if (json?.asString != null && json.asString.isNotEmpty()) {
-            LocalDateTime.parse(json.asString, formatter)
-        } else {
-            null
+        val str = json?.asString ?: return null
+        if (str.isEmpty()) return null
+
+        return try {
+            // Try parsing date with timezone first
+            OffsetDateTime.parse(str).toLocalDateTime()
+        } catch (_: DateTimeParseException) {
+            // Fallback to plain LocalDateTime (no offset)
+            LocalDateTime.parse(str, formatter)
         }
     }
 

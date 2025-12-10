@@ -42,7 +42,7 @@ class SongsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteSong(songId: String): Result<String> =
         runCatching {
-            service.deleteSong(songId)
+            service.deleteSong(songId).message
         }.onFailure { error ->
             Log.e(TAG, "deleteSong($songId) failed", error)
         }

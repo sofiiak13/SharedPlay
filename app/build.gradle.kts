@@ -55,11 +55,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-
-    // 👇 Add this for lifecycle ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4")
-
-    // 👇 Add this if you want to use viewModel() inside Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
 
     // LiveData support in Compose
@@ -71,7 +67,13 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.ui.text)
+
+    implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+    implementation("com.google.firebase:firebase-database")
+    // Firebase login
+    implementation("com.firebaseui:firebase-ui-auth:9.1.1")
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
 
     implementation(libs.androidx.lifecycle.viewmodel.kt)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
@@ -86,7 +88,6 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:2.8.3")
 
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
-
 
 
     testImplementation(libs.junit)

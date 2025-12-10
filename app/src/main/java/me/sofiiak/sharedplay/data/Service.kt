@@ -1,10 +1,14 @@
 package me.sofiiak.sharedplay.data
 
+import me.sofiiak.sharedplay.data.dto.BasicResponse
 import me.sofiiak.sharedplay.data.dto.CommentResponse
+import me.sofiiak.sharedplay.data.dto.InviteResponse
 import me.sofiiak.sharedplay.data.dto.PlaylistResponse
 import me.sofiiak.sharedplay.data.dto.PlaylistUpdate
 import me.sofiiak.sharedplay.data.dto.ReactionResponse
 import me.sofiiak.sharedplay.data.dto.SongResponse
+import me.sofiiak.sharedplay.data.dto.UserRequest
+import me.sofiiak.sharedplay.data.dto.UserResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -14,6 +18,16 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface Service {
+    @GET("/user/{user_id}")
+    suspend fun getUser(
+        @Path("user_id") userId: String
+    ): UserResponse
+
+    @POST("user")
+    suspend fun createUser(
+        @Body user: UserRequest
+    ): UserResponse
+
     @GET("playlist/{user_id}/playlists")
     suspend fun getUserPlaylists(
         @Path("user_id") userId: String
@@ -38,8 +52,24 @@ interface Service {
     @DELETE("playlist/{playlist_id}")
     suspend fun deletePlaylist(
         @Path("playlist_id") playlistId: String
-    ): String
+    ): BasicResponse
 
+    @POST("playlist/{playlistId}/invites")
+    suspend fun createInvite(
+        @Path("playlistId") playlistId: String,
+        @Query("user_id") userId: String,
+    ): InviteResponse
+
+    @GET("playlist/invites/{inviteId}")
+    suspend fun validateInvite(
+        @Path("inviteId") inviteId: String
+    ): InviteResponse
+
+    @POST("playlist/{playlistId}/editors")
+    suspend fun addEditor(
+        @Path("playlistId") playlistId: String,
+        @Query("user_id") userId: String,
+    ): BasicResponse
 
     @GET("song/{song_id}")
     suspend fun getSong(
@@ -59,17 +89,10 @@ interface Service {
         @Query("url") url: String,
     ): SongResponse
 
-    // might delete for now. only can be used for moving a song to a different playlist
-    @PATCH("song/{song_id}")
-    suspend fun editSong(
-        @Path("song_id") songId: String,
-        @Body playlist: SongResponse
-    ): SongResponse
-
     @DELETE("song/{song_id}")
     suspend fun deleteSong(
         @Path("song_id") songId: String
-    ) : String
+    ) : BasicResponse
 
 
     // do I need it individually?
@@ -102,7 +125,7 @@ interface Service {
     @DELETE("comment/{comment_id}")
     suspend fun deleteComment(
         @Path("comment_id") commentId: String
-    ): String
+    ): BasicResponse
 
 
     @POST("reaction")
@@ -129,5 +152,5 @@ interface Service {
     @DELETE("reaction/{reaction_id}")
     suspend fun deleteReaction(
         @Path("reaction_id") reactionId: String
-    ): String
+    ): BasicResponse
 }

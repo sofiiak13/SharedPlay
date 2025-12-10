@@ -1,8 +1,10 @@
 package me.sofiiak.sharedplay.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,6 +19,7 @@ import me.sofiiak.sharedplay.data.dto.SongResponse
 import me.sofiiak.sharedplay.data.formatDate
 import javax.inject.Inject
 
+private const val TAG = "PlaylistDetailsViewModel"
 
 @HiltViewModel
 class PlaylistDetailsViewModel @Inject constructor(
@@ -56,6 +59,13 @@ class PlaylistDetailsViewModel @Inject constructor(
     }
 
     fun onUiEvent(event: UiEvent) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            Log.w(TAG, "Cannot get playlist details: user is not authenticated.")
+            _state.update { it.copy(error = "You must be signed in to see your playlist.") }
+            return
+        }
+        val userId = user.uid
         when (event) {
             is UiEvent.AddSongDialogConfirmButtonClick ->
                 viewModelScope.launch {
@@ -63,7 +73,7 @@ class PlaylistDetailsViewModel @Inject constructor(
                     songsRepository.addSong(
                         url = event.songUrl,
                         playlistId = playlistId,
-                        userId = "-Odv6YSev5ZNYnDdis9d", // todo: modify this hardcoded value
+                        userId = userId,
                     )
                     hideAddSongDialog()
                     _state.update {
@@ -99,7 +109,7 @@ class PlaylistDetailsViewModel @Inject constructor(
                 )
             }
 
-            is UiEvent.EditPlaylistNameConfirmButtonClick ->  viewModelScope.launch {
+            is UiEvent.EditPlaylistNameConfirmButtonClick -> viewModelScope.launch {
 
                 playlistsRepository.editPlaylist(
                     playlistId = playlistId,
@@ -115,13 +125,16 @@ class PlaylistDetailsViewModel @Inject constructor(
             }
 
 
-            UiEvent.EditPlaylistNameButtonClick ->  _state.update {
+            UiEvent.EditPlaylistNameButtonClick -> _state.update {
                 it.copy(
                     editPlaylistNameDialog = getEditPlaylistNameDialog()
                 )
             }
 
             UiEvent.EditPlaylistNameDismiss -> hideEditPlaylistNameDialog()
+
+            is UiEvent.SharePlaylistButtonClick -> createInviteLink(userId)
+            UiEvent.SharePlaylistDismiss -> hideSharePlaylistDialog()
         }
     }
 
@@ -163,6 +176,54 @@ class PlaylistDetailsViewModel @Inject constructor(
         buttonConfirm = "Rename",
         buttonCancel = "Cancel",
     )
+
+    private fun hideSharePlaylistDialog() {
+        _state.update {
+            it.copy(sharePlaylistDialog = null)
+        }
+    }
+
+    private fun createInviteLink(userId: String) = viewModelScope.launch {
+        _state.update { it.copy(isLoading = true) }
+
+        try {
+            val invite = playlistsRepository.createInvite(playlistId, userId).getOrNull()
+            val inviteId = invite?.id
+
+            if (inviteId != null) {
+                // Construct the full link
+                val link = "https://shared-play/invite/$inviteId"
+
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        shareLink = link, // Save the link for good measure
+                        sharePlaylistDialog = UiState.SharePlaylistDialog(
+                            title = "Copy this link invite to share",
+                            link = link, // Use the link we just created
+                            buttonConfirm = "Copy link",
+                            buttonCancel = "Cancel",
+                        )
+                    )
+                }
+            } else {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Could not create share link. Please try again."
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            // Handle network errors, etc.
+            _state.update {
+                it.copy(
+                    isLoading = false,
+                    error = "Failed to create share link: ${e.message}"
+                )
+            }
+        }
+    }
 
     /**
      * Public: load playlist details and songs for the given id.
@@ -244,6 +305,8 @@ class PlaylistDetailsViewModel @Inject constructor(
         val addSongDialog: AddSongDialog? = null,
         val deletePlaylistDialog: DeletePlaylistDialog? = null,
         val editPlaylistNameDialog: EditPlaylistNameDialog? = null,
+        val sharePlaylistDialog: SharePlaylistDialog? = null,
+        val shareLink: String? = null,
         val isLoading: Boolean = false,
         val error: String? = null
     ) {
@@ -289,6 +352,13 @@ class PlaylistDetailsViewModel @Inject constructor(
         data class EditPlaylistNameDialog(
             val title: String,
             val placeholder: String,
+            val buttonConfirm: String,
+            val buttonCancel: String,
+        )
+
+        data class SharePlaylistDialog(
+            val title: String,
+            val link: String = "",
             val buttonConfirm: String,
             val buttonCancel: String,
         )
@@ -348,5 +418,7 @@ class PlaylistDetailsViewModel @Inject constructor(
             val newName: String,
         ) : UiEvent
 
+        data object SharePlaylistButtonClick : UiEvent
+        data object SharePlaylistDismiss : UiEvent
     }
 }

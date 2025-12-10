@@ -13,7 +13,12 @@
           "package_name": "me.sofiiak.sharedplay"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "263535514792-gm1hc645h626eonjdv2v0p93pqsk378g.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD3Y69DHvLpUsDpZuOqIu1Dx0E-oG3Sdqk"
@@ -21,7 +26,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "263535514792-gm1hc645h626eonjdv2v0p93pqsk378g.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

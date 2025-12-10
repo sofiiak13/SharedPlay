@@ -1,8 +1,10 @@
 package me.sofiiak.sharedplay.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +16,8 @@ import me.sofiiak.sharedplay.data.dto.CommentResponse
 import me.sofiiak.sharedplay.data.formatDate
 import kotlin.collections.isNotEmpty
 import kotlin.text.isNotEmpty
+
+private const val TAG = "CommentSectionViewModel"
 
 @HiltViewModel
 class CommentSectionViewModel @Inject constructor(
@@ -160,6 +164,15 @@ class CommentSectionViewModel @Inject constructor(
     }
 
     private fun onUiEvent(uiEvent: UiEvent.WriteAlert) {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user == null) {
+            Log.w(TAG, "Cannot create playlist: user is not authenticated.")
+            _state.update { it.copy(error = "You must be signed in to create a playlist.") }
+            return
+        }
+
+        val userId = user.uid
+        val userName = user.displayName?: ""
         when (uiEvent) {
             is UiEvent.WriteAlert.ConfirmButton ->
                 viewModelScope.launch {
@@ -168,8 +181,8 @@ class CommentSectionViewModel @Inject constructor(
                             id = "", //placeholder
                             text = uiEvent.text,
                             prev = uiEvent.prevCommentId,
-                            author = "Name 1",
-                            author_id = "1",
+                            author = userName,
+                            author_id = userId,
                             song_id = songId,
                         )
                     )

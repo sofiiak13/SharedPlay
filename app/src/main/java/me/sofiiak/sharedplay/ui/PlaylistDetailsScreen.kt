@@ -1,5 +1,6 @@
 package me.sofiiak.sharedplay.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,12 +18,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,7 +39,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -94,7 +99,7 @@ private fun PlaylistDetailsContent(
                                 )
                             },
                         imageVector = Icons.Filled.Add,
-                        contentDescription = null,
+                        contentDescription = "Button to add new song to current playlist.",
                     )
 
                     Icon(
@@ -105,7 +110,7 @@ private fun PlaylistDetailsContent(
                                 )
                             },
                         imageVector = Icons.Filled.Delete,
-                        contentDescription = null,
+                        contentDescription = "Button to delete current playlist.",
                     )
 
                     Icon(
@@ -116,7 +121,18 @@ private fun PlaylistDetailsContent(
                                 )
                             },
                         imageVector = Icons.Filled.Edit,
-                        contentDescription = null,
+                        contentDescription = "Button to rename current playlist.",
+                    )
+
+                    Icon(
+                        modifier = Modifier
+                            .clickable {
+                                uiEvent(
+                                    PlaylistDetailsViewModel.UiEvent.SharePlaylistButtonClick
+                                )
+                            },
+                        imageVector = Icons.Filled.Share,
+                        contentDescription = "Button to share current playlist.",
                     )
                 }
             )
@@ -181,6 +197,13 @@ private fun PlaylistDetailsContent(
     uiState.editPlaylistNameDialog?.let { editPlaylistNameDialog ->
         EditPlaylistNameDialog(
             uiState = editPlaylistNameDialog,
+            uiEvent = uiEvent,
+        )
+    }
+
+    uiState.sharePlaylistDialog?.let { sharePlaylistDialog ->
+        SharePlaylistDialog(
+            uiState = sharePlaylistDialog,
             uiEvent = uiEvent,
         )
     }
@@ -391,6 +414,54 @@ private fun EditPlaylistNameDialog(
                 }
             ) {
                 Text(uiState.buttonCancel)
+            }
+        }
+    )
+}
+
+@Composable
+private fun SharePlaylistDialog(
+    uiState: PlaylistDetailsViewModel.UiState.SharePlaylistDialog,
+    uiEvent: (PlaylistDetailsViewModel.UiEvent) -> Unit,
+) {
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = {
+            uiEvent(
+                PlaylistDetailsViewModel.UiEvent.SharePlaylistDismiss
+            )
+        },
+        title = { Text(uiState.title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Read-only text field showing the link
+                OutlinedTextField(
+                    value = uiState.link,
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    clipboard.setText(AnnotatedString(uiState.link))
+                    Toast.makeText(context, "Link copied to clipboard", Toast.LENGTH_SHORT).show()
+                }
+            ) {
+                Text("Copy")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    uiEvent(PlaylistDetailsViewModel.UiEvent.SharePlaylistDismiss)
+                }
+            ) {
+                Text("Cancel")
             }
         }
     )

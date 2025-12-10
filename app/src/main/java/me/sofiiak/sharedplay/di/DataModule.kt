@@ -10,6 +10,8 @@ import me.sofiiak.sharedplay.data.PlaylistsRepository
 import me.sofiiak.sharedplay.data.PlaylistsRepositoryImpl
 import me.sofiiak.sharedplay.data.SongsRepository
 import me.sofiiak.sharedplay.data.SongsRepositoryImpl
+import me.sofiiak.sharedplay.data.UserRepository
+import me.sofiiak.sharedplay.data.UserRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -29,4 +31,9 @@ abstract class DataModule {
     abstract fun provideCommentSectionRepository(
         impl: CommentSectionRepositoryImpl,
     ): CommentSectionRepository
+
+    @Binds
+    abstract fun provideUserRepository(
+        impl: UserRepositoryImpl,
+    ): UserRepository
 }

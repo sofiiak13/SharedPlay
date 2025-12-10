@@ -1,8 +1,6 @@
 package me.sofiiak.sharedplay
 
-
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,68 +9,98 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import dagger.hilt.android.AndroidEntryPoint
+import me.sofiiak.sharedplay.ui.CommentSection
 import me.sofiiak.sharedplay.ui.HomeScreen
 import me.sofiiak.sharedplay.ui.PlaylistDetails
-import me.sofiiak.sharedplay.ui.theme.SharedPlayTheme
-import java.net.InetAddress
-import java.net.UnknownHostException
-private const val TAG = "MainActivity"
+import me.sofiiak.sharedplay.ui.SignInScreen
 
-/**
- * Kind of like my main.
- */
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
-            setContent {
-                val navController = rememberNavController()
+            val navController = rememberNavController()
 
-                NavHost(
-                    navController = navController,
-                    startDestination = "home"
+            val inviteId = intent?.data?.lastPathSegment
+
+
+            NavHost(
+                navController = navController,
+                startDestination = "home" // always start from home and go back to sign in if user isn't signed in
+            ) {
+                composable(
+                    route = "sign-in"
                 ) {
-                    composable("home") {
-                        HomeScreen(
-                            navController = navController
-                        )
-                    }
+                    SignInScreen(
+                        navController = navController,
+                    )
+                }
+                composable(route = "home?inviteId={inviteId}",
+                    arguments = listOf(navArgument("inviteId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }),
+                    deepLinks = listOf(
+                        navDeepLink {
+                            uriPattern = "https://shared-play/invite/{inviteId}"
+                        }
+                    )
+                ){
+                    HomeScreen(
+                        navController = navController,
+                    )
+                }
 
-                    composable(
-                        route = "playlist_details/{playlistId}",
-                        arguments = listOf(navArgument("playlistId") {
-                            type = NavType.StringType
-                        })
-                    ) {
-                        PlaylistDetails(navController = navController)
-                    }
+                composable(
+                    route = "playlist_details/{playlistId}",
+                    arguments = listOf(navArgument("playlistId") {
+                        type = NavType.StringType
+                    })
+                ) {
+                    PlaylistDetails(navController = navController)
+                }
 
-                    composable (
-                        route ="playlist_details/{playlistId}/song/{songId}" ,
-                        arguments = listOf(
-                            navArgument("playlistId") { type = NavType.StringType },
-                            navArgument("songId") { type = NavType.StringType }
-                        )
-                    ){
-                        CommentSection(navController = navController)
-                    }
+                composable(
+                    route = "playlist_details/{playlistId}/song/{songId}",
+                    arguments = listOf(
+                        navArgument("playlistId") { type = NavType.StringType },
+                        navArgument("songId") { type = NavType.StringType }
+                    )
+                ) {
+                    CommentSection(navController = navController)
                 }
             }
         }
-
-    private fun testDns() {
-        Thread {
-            try {
-                val address = InetAddress.getByName("143.244.50.123")
-                Log.d("DNS_TEST", "Resolved: $address")
-            } catch (e: UnknownHostException) {
-                Log.e("DNS_TEST", "Cannot resolve host", e)
-            }
-        }.start()
     }
+//    private fun askPreferredName(user: FirebaseUser?) {
+//
+//        val input = EditText(this)
+//        AlertDialog.Builder(this)
+//            .setTitle("Choose your display name")
+//            .setView(input)
+//            .setPositiveButton("Save") { _, _ ->
+//                val preferredName = input.text.toString().trim()
+//                if (preferredName.isNotEmpty()) {
+//                    val profileUpdates = UserProfileChangeRequest.Builder()
+//                        .setDisplayName(preferredName)
+//                        .build()
+//
+//                    user?.updateProfile(profileUpdates)?.addOnCompleteListener { task ->
+//                        if (task.isSuccessful) {
+//                            Toast.makeText(this, "Name updated!", Toast.LENGTH_SHORT).show()
+//                        }
+//                    }
+//                }
+//            }
+//            .setNegativeButton("Cancel", null)
+//            .show()
+//    }
+
 }

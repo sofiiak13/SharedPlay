@@ -34,7 +34,7 @@ class CommentSectionRepositoryImpl @Inject constructor (
 
     override suspend fun deleteComment(commentId: String): Result<String> =
         runCatching {
-            service.deleteComment(commentId)
+            service.deleteComment(commentId).message
         }.onFailure { error ->
             Log.e(TAG, "deleteComment: ", error)
         }
@@ -69,7 +69,7 @@ class CommentSectionRepositoryImpl @Inject constructor (
 
     override suspend fun deleteReaction(reactionId: String):  Result<String> =
         runCatching {
-            service.deleteReaction(reactionId)
+            service.deleteReaction(reactionId).message
         }.onFailure { error ->
             Log.e(TAG, "deleteReaction: ", error)
         }
