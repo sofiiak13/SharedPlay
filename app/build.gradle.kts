@@ -89,6 +89,9 @@ dependencies {
 
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
 
+    // Youtube player
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:13.0.0")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

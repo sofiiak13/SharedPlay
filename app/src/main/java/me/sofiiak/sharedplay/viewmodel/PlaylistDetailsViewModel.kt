@@ -44,7 +44,7 @@ class PlaylistDetailsViewModel @Inject constructor(
 
     init {
         if (validatePlaylistId()) {
-            loadPlaylistDetails(playlistId)
+            onUiEvent(UiEvent.LoadSongs)
         }
     }
 
@@ -135,6 +135,7 @@ class PlaylistDetailsViewModel @Inject constructor(
 
             is UiEvent.SharePlaylistButtonClick -> createInviteLink(userId)
             UiEvent.SharePlaylistDismiss -> hideSharePlaylistDialog()
+            UiEvent.LoadSongs -> loadPlaylistDetails(playlistId)
         }
     }
 
@@ -402,6 +403,8 @@ class PlaylistDetailsViewModel @Inject constructor(
     }
 
     sealed interface UiEvent {
+
+        data object LoadSongs : UiEvent
         data object AddSongButtonClick : UiEvent
         data object AddSongDialogDismiss : UiEvent
         data class AddSongDialogConfirmButtonClick(

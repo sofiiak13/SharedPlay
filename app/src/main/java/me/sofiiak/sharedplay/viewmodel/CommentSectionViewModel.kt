@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import me.sofiiak.sharedplay.data.CommentSectionRepository
+import me.sofiiak.sharedplay.data.SongsRepository
 import me.sofiiak.sharedplay.data.dto.CommentResponse
 import me.sofiiak.sharedplay.data.formatDate
 import kotlin.collections.isNotEmpty
@@ -21,6 +22,7 @@ private const val TAG = "CommentSectionViewModel"
 
 @HiltViewModel
 class CommentSectionViewModel @Inject constructor(
+    private val songsRepository: SongsRepository,
     private val commentRepository: CommentSectionRepository,
     private val savedStateHandle: SavedStateHandle,
 ): ViewModel() {
@@ -52,7 +54,7 @@ class CommentSectionViewModel @Inject constructor(
 
     init {
         if (validateSongId()) {
-            loadComments(songId)
+            onUiEvent(UiEvent.LoadComments)
         }
     }
 
@@ -71,6 +73,27 @@ class CommentSectionViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
+                val songResponse = songsRepository.getSong(songId)
+                    .getOrNull()
+                ?: throw IllegalArgumentException("Song not found")
+
+
+                val song = UiState.Song(
+                    id = songResponse.id,
+                    ytId = songResponse.yt_id,
+                    title = songResponse.title,
+                    artist = songResponse.artist,
+                )
+
+                _state.value = _state.value.copy(curSong = song)
+            } catch (t: Throwable) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = t.message ?: "Unknown error. Couldn't get the song."
+                )
+            }
+
+            try {
                 val comments = commentRepository
                     .getAllComments(songId)
                     .getOrNull()
@@ -82,16 +105,17 @@ class CommentSectionViewModel @Inject constructor(
                     _state.update {
                         it.copy(comments = comments, isLoading = false)
                     }
-                } else {
-                    _state.update {
-                        it.copy(error="No one has commented on this song yet!", isLoading = false)
-                    }
                 }
+//                else {
+//                    _state.update {
+//                        it.copy(error="No one has commented on this song yet!", isLoading = false)
+//                    }
+//                }
             } catch (t: Throwable) {
                 // handle error
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = t.message ?: "Unknown error"
+                    error = t.message ?: "Unknown error. Couldn't get the comments."
                 )
             }
         }
@@ -122,6 +146,8 @@ class CommentSectionViewModel @Inject constructor(
                 // new comment has no previous comment
                 it.copy(writeCommentDialog = getWriteCommentDialog(null))
             }
+
+            UiEvent.LoadComments -> loadComments(songId)
         }
     }
 
@@ -271,6 +297,7 @@ class CommentSectionViewModel @Inject constructor(
 
     data class UiState(
         val toolbar: Toolbar,
+        val curSong: Song? = null,
         val comments: List<Comment> = emptyList(),
         val writeCommentDialog: WriteCommentDialog? = null,
         val deleteCommentDialog: DeleteCommentDialog? = null,
@@ -289,6 +316,13 @@ class CommentSectionViewModel @Inject constructor(
             val author: String,
             val date: String,
             val depth: Int = 0
+        )
+
+        data class Song(
+            val id: String,
+            val ytId: String,
+            val title: String,
+            val artist: String,
         )
 
         data class WriteCommentDialog(
@@ -359,6 +393,7 @@ class CommentSectionViewModel @Inject constructor(
     }
 
     sealed interface UiEvent {
+        data object LoadComments : UiEvent
 
         sealed interface DropdownMenu : UiEvent {
             data class ReplyToComment(

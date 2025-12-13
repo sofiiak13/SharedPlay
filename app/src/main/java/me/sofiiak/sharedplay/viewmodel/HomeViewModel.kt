@@ -58,6 +58,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+
     private fun List<PlaylistResponse>.toUiState() =
         this.map { playlistResponse ->
             UiState.Playlist(
@@ -164,7 +165,6 @@ class HomeViewModel @Inject constructor(
         buttonConfirm = "Create",
         buttonCancel = "Cancel",
     )
-
 
     private fun loadPlaylists(userId: String) {
         viewModelScope.launch {

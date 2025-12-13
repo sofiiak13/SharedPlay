@@ -31,7 +31,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,7 +51,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import me.sofiiak.sharedplay.viewmodel.PlaylistDetailsViewModel
 
@@ -61,11 +66,21 @@ fun PlaylistDetails(
 ) {
     val uiState = viewModel.state.collectAsStateWithLifecycle().value
 
+    val uiEvent = viewModel::onUiEvent
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            uiEvent(
+                PlaylistDetailsViewModel.UiEvent.LoadSongs
+            )
+        }
+    }
 
     PlaylistDetailsContent(
         uiState = uiState,
         navController = navController,
-        uiEvent = viewModel::onUiEvent,
+        uiEvent = uiEvent,
     )
 }
 
@@ -144,16 +159,13 @@ private fun PlaylistDetailsContent(
                 .padding(innerPadding)
                 .background(Color(0xFFFFB6C1)) // soft pink background
         ) {
-            when {
-                uiState.isLoading -> {
-                    Text(
-                        text = "Wait a second...", // use ui state
-                        color = Color.Blue,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                uiState.error != null -> {
+            if (uiState.isLoading && uiState.songs.isEmpty()) {
+                Text(
+                    text = "Wait a second...", // use ui state
+                    color = Color.Blue,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else if (uiState.error != null) {
                     Text(
                         text = uiState.error,
                         fontSize = 18.sp,
@@ -162,9 +174,16 @@ private fun PlaylistDetailsContent(
                         color = Color.DarkGray
                     )
 
-                }
-
-                else -> {
+                } else { // handle loading or refreshing
+                    PullToRefreshBox(
+                        isRefreshing = uiState.isLoading,
+                        onRefresh = {
+                            uiEvent(
+                                PlaylistDetailsViewModel.UiEvent.LoadSongs
+                            )
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()

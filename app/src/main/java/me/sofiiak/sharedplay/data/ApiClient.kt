@@ -1,9 +1,9 @@
 package me.sofiiak.sharedplay.data
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDateTime
@@ -12,12 +12,8 @@ import java.time.LocalDateTime
 object ApiClient {
     private const val BASE_URL = "https://web-production-568ff.up.railway.app/"
 
-    private val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
-
     private val client = OkHttpClient.Builder()
-        .addInterceptor(logging)
+        .addInterceptor(AuthInterceptor(FirebaseAuth.getInstance()))
         .build()
 
     private val gson: Gson = GsonBuilder()

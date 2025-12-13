@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,13 +41,21 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
 import me.sofiiak.sharedplay.viewmodel.CommentSectionViewModel
 import me.sofiiak.sharedplay.viewmodel.CommentSectionViewModel.UiEvent
 
@@ -57,12 +66,50 @@ fun CommentSection(
 ) {
     val uiState = viewModel.state.collectAsStateWithLifecycle().value
 
+    val uiEvent = viewModel::onUiEvent
+
     CommentSectionContent(
         uiState = uiState,
         navController = navController,
-        uiEvent = viewModel::onUiEvent,
+        uiEvent = uiEvent
     )
 }
+
+@Composable
+private fun YouTubeVideo(song: CommentSectionViewModel.UiState.Song) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        val context = LocalContext.current
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val youTubePlayerView = remember {
+            YouTubePlayerView(context).apply {
+                lifecycleOwner.lifecycle.addObserver(this)
+            }
+        }
+
+        Text(
+            text = "${song.artist} - ${song.title}",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        AndroidView(
+            factory = { youTubePlayerView },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(250.dp)
+        ) { view ->
+            // Setup the player when the view is attached
+            view.addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+                override fun onReady(youTubePlayer: YouTubePlayer) {
+                    youTubePlayer.cueVideo(song.ytId, 0f)
+                }
+            })
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,16 +172,45 @@ private fun CommentSectionContent(
                 .padding(innerPadding)
                 .background(Color(0xFFFFB6C1))
         ) {
-            when {
-                uiState.isLoading -> {
-                    Text(
-                        text = "Wait a second...", // use ui state
-                        color = Color.Blue,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+            if (uiState.isLoading && uiState.comments.isEmpty()) {
+                Text(
+                    text = "Wait a second...", // use ui state
+                    color = Color.Blue,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else if (uiState.comments.isEmpty()) {
+                val song = uiState.curSong
+                if (song == null) {
+                    // Optional: show loading or placeholder for video
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                        Text("Loading video...", color = Color.Gray)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        item{ YouTubeVideo(song = song) }
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 20.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No one commented on this song yet!",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+                    }
                 }
-
-                uiState.error != null -> {
+            }
+            else if (uiState.error != null) { // if there is any other error
                     Text(
                         text = uiState.error,
                         fontSize = 18.sp,
@@ -144,31 +220,52 @@ private fun CommentSectionContent(
                     )
                 }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        items(uiState.comments) { comment ->
-                            CommentItem(
-                                comment = comment,
-                                onEditClick = {
-                                    uiEvent(
-                                        UiEvent.DropdownMenu.EditComment(comment.id)
-                                    )
-                                },
-                                onDeleteClick = {
-                                    uiEvent(
-                                        UiEvent.DropdownMenu.DeleteComment(comment.id)
-                                    )
-                                },
-                                onReplyClick = {
-                                    uiEvent(
-                                        UiEvent.DropdownMenu.ReplyToComment(comment.id)
-                                    )
-                                }
+            else { // handle loading or refreshing
+                val song = uiState.curSong
+                if (song == null) {
+                    // Optional: show loading or placeholder for video
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                        Text("Loading video...", color = Color.Gray)
+                    }
+                } else {
+                    PullToRefreshBox(
+                        isRefreshing = uiState.isLoading,
+                        onRefresh = {
+                            uiEvent(
+                                UiEvent.LoadComments
                             )
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            item {
+                                YouTubeVideo(song = song)
+                            }
+
+                            items(uiState.comments) { comment ->
+                                CommentItem(
+                                    comment = comment,
+                                    onEditClick = {
+                                        uiEvent(
+                                            UiEvent.DropdownMenu.EditComment(comment.id)
+                                        )
+                                    },
+                                    onDeleteClick = {
+                                        uiEvent(
+                                            UiEvent.DropdownMenu.DeleteComment(comment.id)
+                                        )
+                                    },
+                                    onReplyClick = {
+                                        uiEvent(
+                                            UiEvent.DropdownMenu.ReplyToComment(comment.id)
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }

@@ -16,7 +16,6 @@ import me.sofiiak.sharedplay.ui.HomeScreen
 import me.sofiiak.sharedplay.ui.PlaylistDetails
 import me.sofiiak.sharedplay.ui.SignInScreen
 
-
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 

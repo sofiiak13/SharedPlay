@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -21,7 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,7 +40,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import com.firebase.ui.auth.AuthUI
 import com.google.firebase.auth.FirebaseAuth
@@ -51,10 +57,20 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.state.collectAsStateWithLifecycle().value
+    val uiEvent = viewModel::onHomeUiEvent
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            uiEvent(
+                HomeViewModel.UiEvent.LoadPlaylists
+            )
+        }
+    }
 
     HomeScreenContent(
         uiState = uiState,
-        uiEvent = viewModel::onHomeUiEvent,
+        uiEvent = uiEvent,
         navController = navController,
     )
 
@@ -131,37 +147,43 @@ private fun HomeScreenContent(
                 .padding(paddingValues)
                 .background(Color(0xFFFFB6C1)) // soft pink background
         ) {
-            when {
-                uiState.isLoading -> {
-                    Text(
-                        text = "Wait a second...", // use ui state
-                        color = Color.Blue,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                uiState.error != null -> {
-                    Text(
-                        text = uiState.error,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                        color = Color.Black,
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(horizontal = 32.dp)
-                    )
-                }
-                else -> {
+            // Check for initial loading (loading is true AND the list is empty)
+            if (uiState.isLoading && uiState.playlists.isEmpty()) {
+                Text(
+                    text = "Wait a second...", // use ui state
+                    color = Color.Blue,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else if (uiState.error != null) {
+                Text(
+                    text = uiState.error,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp)
+                )
+            }
+            else { // handle loading or refreshing
+                PullToRefreshBox(
+                    isRefreshing = uiState.isLoading,
+                    onRefresh = {
+                        uiEvent(
+                            HomeViewModel.UiEvent.LoadPlaylists
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
-
                         item {
                             Text(
-                                text = "My playlists", // todo: use ui state
+                                text = "My playlists",
                                 style = TextStyle(
                                     fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
@@ -185,6 +207,7 @@ private fun HomeScreenContent(
                     }
                 }
             }
+
             uiState.addPlaylistDialog?.let { addPlaylistDialog ->
                 AddPlaylistDialog(
                     uiState = addPlaylistDialog,
