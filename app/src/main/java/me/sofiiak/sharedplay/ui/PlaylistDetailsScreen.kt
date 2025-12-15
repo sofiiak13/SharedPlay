@@ -24,6 +24,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -57,7 +58,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import me.sofiiak.sharedplay.viewmodel.PlaylistDetailsViewModel
-
 
 @Composable
 fun PlaylistDetails(
@@ -159,31 +159,28 @@ private fun PlaylistDetailsContent(
                 .padding(innerPadding)
                 .background(Color(0xFFFFB6C1)) // soft pink background
         ) {
-            if (uiState.isLoading && uiState.songs.isEmpty()) {
+            if (uiState.error != null) {
                 Text(
-                    text = "Wait a second...", // use ui state
-                    color = Color.Blue,
-                    modifier = Modifier.align(Alignment.Center)
+                    text = uiState.error,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.DarkGray
                 )
-            } else if (uiState.error != null) {
-                    Text(
-                        text = uiState.error,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.align(Alignment.Center),
-                        color = Color.DarkGray
-                    )
 
-                } else { // handle loading or refreshing
-                    PullToRefreshBox(
-                        isRefreshing = uiState.isLoading,
-                        onRefresh = {
-                            uiEvent(
-                                PlaylistDetailsViewModel.UiEvent.LoadSongs
-                            )
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    ) {
+            } else { // handle loading or refreshing
+                if (uiState.isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                PullToRefreshBox(
+                    isRefreshing = false,
+                    onRefresh = {
+                        uiEvent(
+                            PlaylistDetailsViewModel.UiEvent.LoadSongs
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -236,10 +233,10 @@ private fun SongCard(song: PlaylistDetailsViewModel.UiState.Song, navController:
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .clickable {
-            navController.navigate(
-                "playlist_details/${song.playlistId}/song/${song.id}"
-            )
-        },
+                navController.navigate(
+                    "playlist_details/${song.playlistId}/song/${song.id}"
+                )
+            },
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(

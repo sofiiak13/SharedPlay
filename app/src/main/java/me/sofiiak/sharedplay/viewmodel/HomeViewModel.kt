@@ -117,7 +117,6 @@ class HomeViewModel @Inject constructor(
 
         if (curUser == null) {
             Log.w(TAG, "Cannot create playlist: user is not authenticated.")
-            _state.update { it.copy(error = "You must be signed in to create a playlist.") }
             return
         }
 
@@ -178,7 +177,7 @@ class HomeViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             playlists = playlistResponses.toUiState(),
-                            isLoading = false
+                            isLoading = false,
                         )
                     }
                 } else {

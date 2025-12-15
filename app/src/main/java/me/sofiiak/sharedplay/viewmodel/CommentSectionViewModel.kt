@@ -15,8 +15,6 @@ import me.sofiiak.sharedplay.data.CommentSectionRepository
 import me.sofiiak.sharedplay.data.SongsRepository
 import me.sofiiak.sharedplay.data.dto.CommentResponse
 import me.sofiiak.sharedplay.data.formatDate
-import kotlin.collections.isNotEmpty
-import kotlin.text.isNotEmpty
 
 private const val TAG = "CommentSectionViewModel"
 
@@ -54,7 +52,7 @@ class CommentSectionViewModel @Inject constructor(
 
     init {
         if (validateSongId()) {
-            onUiEvent(UiEvent.LoadComments)
+            loadComments(songId = songId, screenLoading = true)
         }
     }
 
@@ -68,9 +66,15 @@ class CommentSectionViewModel @Inject constructor(
         return isValid
     }
 
-    fun loadComments(songId: String) {
+    private fun loadComments(
+        songId: String,
+        screenLoading: Boolean = false,
+    ) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.value = _state.value.copy(
+                loading = UiState.Loading(screen = screenLoading, comments = true),
+                error = null,
+            )
 
             try {
                 val songResponse = songsRepository.getSong(songId)
@@ -88,7 +92,7 @@ class CommentSectionViewModel @Inject constructor(
                 _state.value = _state.value.copy(curSong = song)
             } catch (t: Throwable) {
                 _state.value = _state.value.copy(
-                    isLoading = false,
+                    loading = UiState.Loading(),
                     error = t.message ?: "Unknown error. Couldn't get the song."
                 )
             }
@@ -101,20 +105,22 @@ class CommentSectionViewModel @Inject constructor(
                     ?: emptyList()
 
                 if (comments.isNotEmpty()) {
-                    _state.value = _state.value.copy(comments = comments, isLoading = false)
                     _state.update {
-                        it.copy(comments = comments, isLoading = false)
+                        it.copy(
+                            comments = comments,
+                            loading = UiState.Loading(),
+                        )
                     }
                 }
-//                else {
-//                    _state.update {
-//                        it.copy(error="No one has commented on this song yet!", isLoading = false)
-//                    }
-//                }
+                else {
+                    _state.update {
+                        it.copy(error="No one has commented on this song yet!", loading = UiState.Loading())
+                    }
+                }
             } catch (t: Throwable) {
                 // handle error
                 _state.value = _state.value.copy(
-                    isLoading = false,
+                    loading = UiState.Loading(),
                     error = t.message ?: "Unknown error. Couldn't get the comments."
                 )
             }
@@ -214,7 +220,7 @@ class CommentSectionViewModel @Inject constructor(
                     )
                     hideWriteCommentDialog()
                     _state.update {
-                        it.copy(isLoading = true)
+                        it.copy(loading = UiState.Loading(comments = true))
                     }
                     loadComments(songId)
                 }
@@ -231,7 +237,7 @@ class CommentSectionViewModel @Inject constructor(
             )
             hideEditCommentDialog()
             _state.update {
-                it.copy(isLoading = true)
+                it.copy(loading = UiState.Loading(comments = true))
             }
             loadComments(songId)
         }
@@ -250,7 +256,7 @@ class CommentSectionViewModel @Inject constructor(
             commentRepository.deleteComment(commentId = uiEvent.commentId)
             hideDeleteCommentDialog()
             _state.update {
-                it.copy(isLoading = true)
+                it.copy(loading = UiState.Loading(comments = true))
             }
             loadComments(songId)
         }
@@ -302,7 +308,7 @@ class CommentSectionViewModel @Inject constructor(
         val writeCommentDialog: WriteCommentDialog? = null,
         val deleteCommentDialog: DeleteCommentDialog? = null,
         val editCommentDialog: EditCommentDialog? = null,
-        val isLoading: Boolean = false,
+        val loading: Loading = Loading(),
         val error: String? = null
     ) {
         data class Toolbar(
@@ -353,6 +359,11 @@ class CommentSectionViewModel @Inject constructor(
             val author: String
         )
 
+        data class Loading(
+            val screen: Boolean = false,
+            val comments: Boolean= false,
+        )
+
         companion object {
             fun preview(): CommentSectionViewModel.UiState =
                 UiState(
@@ -360,6 +371,7 @@ class CommentSectionViewModel @Inject constructor(
                         title = "CommentSection",
                         backButtonContentDescription = "Back"
                     ),
+                    loading = Loading(),
                     comments = listOf(
                         Comment(
                             id = "1",

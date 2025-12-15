@@ -3,7 +3,10 @@ package me.sofiiak.sharedplay.ui
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +20,7 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -148,13 +152,7 @@ private fun HomeScreenContent(
                 .background(Color(0xFFFFB6C1)) // soft pink background
         ) {
             // Check for initial loading (loading is true AND the list is empty)
-            if (uiState.isLoading && uiState.playlists.isEmpty()) {
-                Text(
-                    text = "Wait a second...", // use ui state
-                    color = Color.Blue,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else if (uiState.error != null) {
+            if (uiState.error != null) {
                 Text(
                     text = uiState.error,
                     fontSize = 16.sp,
@@ -165,10 +163,19 @@ private fun HomeScreenContent(
                         .align(Alignment.Center)
                         .padding(horizontal = 32.dp)
                 )
-            }
-            else { // handle loading or refreshing
+            } else if (uiState.playlists.isEmpty()) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Text(
+                    text = "Wait a second...", // use ui state
+                    color = Color.Blue,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else { // handle loading or refreshing
+                if (uiState.isLoading) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
                 PullToRefreshBox(
-                    isRefreshing = uiState.isLoading,
+                    isRefreshing = false,
                     onRefresh = {
                         uiEvent(
                             HomeViewModel.UiEvent.LoadPlaylists

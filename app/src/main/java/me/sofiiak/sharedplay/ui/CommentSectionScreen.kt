@@ -13,49 +13,49 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import me.sofiiak.sharedplay.viewmodel.CommentSectionViewModel
 import me.sofiiak.sharedplay.viewmodel.CommentSectionViewModel.UiEvent
 
@@ -172,12 +172,8 @@ private fun CommentSectionContent(
                 .padding(innerPadding)
                 .background(Color(0xFFFFB6C1))
         ) {
-            if (uiState.isLoading && uiState.comments.isEmpty()) {
-                Text(
-                    text = "Wait a second...", // use ui state
-                    color = Color.Blue,
-                    modifier = Modifier.align(Alignment.Center)
-                )
+            if (uiState.loading.screen) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             } else if (uiState.comments.isEmpty()) {
                 val song = uiState.curSong
                 if (song == null) {
@@ -220,7 +216,11 @@ private fun CommentSectionContent(
                     )
                 }
 
-            else { // handle loading or refreshing
+            else {
+                if (uiState.loading.comments) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+
                 val song = uiState.curSong
                 if (song == null) {
                     // Optional: show loading or placeholder for video
@@ -229,7 +229,7 @@ private fun CommentSectionContent(
                     }
                 } else {
                     PullToRefreshBox(
-                        isRefreshing = uiState.isLoading,
+                        isRefreshing = false,
                         onRefresh = {
                             uiEvent(
                                 UiEvent.LoadComments
@@ -245,7 +245,6 @@ private fun CommentSectionContent(
                             item {
                                 YouTubeVideo(song = song)
                             }
-
                             items(uiState.comments) { comment ->
                                 CommentItem(
                                     comment = comment,

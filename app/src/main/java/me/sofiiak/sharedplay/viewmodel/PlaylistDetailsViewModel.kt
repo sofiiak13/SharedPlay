@@ -1,6 +1,5 @@
 package me.sofiiak.sharedplay.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -19,14 +18,12 @@ import me.sofiiak.sharedplay.data.dto.SongResponse
 import me.sofiiak.sharedplay.data.formatDate
 import javax.inject.Inject
 
-private const val TAG = "PlaylistDetailsViewModel"
-
 @HiltViewModel
 class PlaylistDetailsViewModel @Inject constructor(
     private val playlistsRepository: PlaylistsRepository,
     private val songsRepository: SongsRepository,
     private val commentsRepository: CommentSectionRepository,
-    private val savedStateHandle: SavedStateHandle,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val playlistId: String = savedStateHandle["playlistId"] ?: ""
@@ -42,26 +39,9 @@ class PlaylistDetailsViewModel @Inject constructor(
 
     val state = _state.asStateFlow()
 
-    init {
-        if (validatePlaylistId()) {
-            onUiEvent(UiEvent.LoadSongs)
-        }
-    }
-
-    private fun validatePlaylistId(): Boolean {
-        val isValid = playlistId.isNotEmpty()
-        if (isValid.not()) {
-            _state.update {
-                it.copy(error = "Invalid playlist id")
-            }
-        }
-        return isValid
-    }
-
     fun onUiEvent(event: UiEvent) {
         val user = FirebaseAuth.getInstance().currentUser
         if (user == null) {
-            Log.w(TAG, "Cannot get playlist details: user is not authenticated.")
             _state.update { it.copy(error = "You must be signed in to see your playlist.") }
             return
         }
@@ -252,9 +232,8 @@ class PlaylistDetailsViewModel @Inject constructor(
                     ?: emptyList()
 
                 if (songs.isNotEmpty()) {
-                    _state.value = _state.value.copy(songs = songs, isLoading = false)
                     _state.update {
-                      it.copy(songs = songs, isLoading = false)
+                        it.copy(songs = songs, isLoading = false)
                     }
                 } else {
                     _state.update {
