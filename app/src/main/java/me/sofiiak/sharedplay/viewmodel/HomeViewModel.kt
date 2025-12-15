@@ -29,31 +29,24 @@ class HomeViewModel @Inject constructor(
     )
     val state = _state.asStateFlow()
 
-    init {
-        checkAuth()
-    }
-
-    private fun checkAuth() {
+    private fun initScreen() {
         viewModelScope.launch {
             userRepository.signIn()
                 .onSuccess { user: UserResponse ->
                     _state.update {
                         it.copy(curUser = user)
                     }
-                    loadPlaylists(userId = user.id)
 
                     // If there is an inviteId in savedStateHandle, trigger an event
                     savedStateHandle.get<String>("inviteId")?.let { inviteId ->
-                        onHomeUiEvent(UiEvent.HandleInvite(inviteId))
+                        handleInvite(inviteId = inviteId, userId = user.id)
                         savedStateHandle["inviteId"] = null
                     }
+
+                    loadPlaylists()
                 }
                 .onFailure {
-                    _state.update {
-                        it.copy(
-                            needSignIn = true
-                        )
-                    }
+                    setNeedSignIn(true)
                 }
         }
     }
@@ -72,13 +65,13 @@ class HomeViewModel @Inject constructor(
         _state.update { it.copy(inviteMessage = null) }
     }
 
-    fun setNeedSignIn(value: Boolean) {
+    private fun setNeedSignIn(value: Boolean) {
         _state.update { current ->
             current.copy(needSignIn = value)
         }
     }
 
-    private fun handleInvite(inviteId: String, userId: String) = viewModelScope.launch {
+    private suspend fun handleInvite(inviteId: String, userId: String) {
         try {
             val invite = playlistsRepository.validateInvite(inviteId).getOrNull()
             if (invite == null) {
@@ -109,34 +102,26 @@ class HomeViewModel @Inject constructor(
                 it.copy(error = errorMessage)
             }
         }
-        loadPlaylists(userId) // reload page after adding new editor
     }
 
     fun onHomeUiEvent(event: UiEvent) {
-        val curUser = state.value.curUser
-
-        if (curUser == null) {
-            Log.w(TAG, "Cannot create playlist: user is not authenticated.")
-            return
-        }
-
-        val userId = curUser.id
-
         when (event) {
             is UiEvent.AddPlaylistConfirmButtonClick ->
-                viewModelScope.launch {
+                state.value.curUser?.id?.let { userId ->
+                    viewModelScope.launch {
 
-                    val newPlaylist = PlaylistResponse(
-                        id = "",
-                        name = event.newName,
-                        owner = userId
-                    )
-                    playlistsRepository.createPlaylist(newPlaylist)
-                    hideAddPlaylistDialog()
-                    _state.update {
-                        it.copy(isLoading = true)
+                        val newPlaylist = PlaylistResponse(
+                            id = "",
+                            name = event.newName,
+                            owner = userId,
+                        )
+                        playlistsRepository.createPlaylist(newPlaylist)
+                        hideAddPlaylistDialog()
+                        _state.update {
+                            it.copy(isLoading = true)
+                        }
+                        loadPlaylists()
                     }
-                    loadPlaylists(userId)
                 }
 
             UiEvent.AddPlaylistDialogDismiss -> hideAddPlaylistDialog()
@@ -147,8 +132,11 @@ class HomeViewModel @Inject constructor(
                 )
             }
 
-            UiEvent.LoadPlaylists -> loadPlaylists(userId)
-            is UiEvent.HandleInvite -> handleInvite(event.inviteId, userId)
+            UiEvent.LoadPlaylists -> loadPlaylists()
+
+            UiEvent.InitScreen -> initScreen()
+
+            UiEvent.NavigatedToSignIn -> setNeedSignIn(false)
         }
     }
 
@@ -165,7 +153,9 @@ class HomeViewModel @Inject constructor(
         buttonCancel = "Cancel",
     )
 
-    private fun loadPlaylists(userId: String) {
+    private fun loadPlaylists() {
+        val userId = state.value.curUser?.id ?: return
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
@@ -253,6 +243,8 @@ class HomeViewModel @Inject constructor(
             val newName: String,
         ) : UiEvent
 
-        data class HandleInvite(val inviteId: String) : UiEvent
+        data object InitScreen : UiEvent
+
+        data object NavigatedToSignIn : UiEvent
     }
 }

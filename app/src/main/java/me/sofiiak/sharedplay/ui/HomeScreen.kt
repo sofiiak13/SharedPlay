@@ -61,20 +61,19 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.state.collectAsStateWithLifecycle().value
-    val uiEvent = viewModel::onHomeUiEvent
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            uiEvent(
-                HomeViewModel.UiEvent.LoadPlaylists
+            viewModel.onHomeUiEvent(
+                HomeViewModel.UiEvent.InitScreen
             )
         }
     }
 
     HomeScreenContent(
         uiState = uiState,
-        uiEvent = uiEvent,
+        uiEvent = viewModel::onHomeUiEvent,
         navController = navController,
     )
 
@@ -92,9 +91,8 @@ fun HomeScreen(
     }
 
     if (uiState.needSignIn) {
-        navController.navigate("sign-in") {
-            popUpTo("home") { inclusive = true }
-        }
+        viewModel.onHomeUiEvent(HomeViewModel.UiEvent.NavigatedToSignIn)
+        navController.navigate("sign-in")
     }
 }
 

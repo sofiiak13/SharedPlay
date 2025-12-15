@@ -1,8 +1,8 @@
 package me.sofiiak.sharedplay.ui
 
 import android.app.Activity
-import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,7 +22,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
-import me.sofiiak.sharedplay.viewmodel.HomeViewModel
 import me.sofiiak.sharedplay.viewmodel.SignInViewModel
 
 
@@ -30,9 +29,12 @@ import me.sofiiak.sharedplay.viewmodel.SignInViewModel
 fun SignInScreen(
     navController: NavController,
     signInViewModel: SignInViewModel = hiltViewModel(),
-    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+
+    BackHandler(enabled = true) {
+        (context as? Activity)?.finish()
+    }
 
     val signInLauncher = rememberLauncherForActivityResult(
         contract = FirebaseAuthUIActivityResultContract(),
@@ -41,9 +43,7 @@ fun SignInScreen(
             signInViewModel.onUiEvent(
                 SignInViewModel.UiEvent.SignedIn
             )
-            homeViewModel.setNeedSignIn(false)
-            val route = "home"
-            navController.navigate(route)
+            navController.popBackStack()
         } else {
             Toast.makeText(
                 context,
