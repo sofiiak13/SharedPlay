@@ -131,11 +131,8 @@ private fun HomeScreenContent(
                         AuthUI.getInstance()
                             .signOut(context)
                             .addOnCompleteListener {
-                                Log.d("MainActivity", "Signed out successfully")
-
-                                navController.navigate("sign-in") {
-                                    popUpTo("home") { inclusive = true }
-                                }
+                                Log.d("HomeScreen", "Signed out successfully")
+                                uiEvent(HomeViewModel.UiEvent.clickedSignedOutButton)
                             }
                     }
                 }

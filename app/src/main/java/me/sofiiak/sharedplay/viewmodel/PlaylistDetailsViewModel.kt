@@ -358,7 +358,7 @@ class PlaylistDetailsViewModel @Inject constructor(
                             playlistId = "",
                             lastComment = Comment(
                                 id = "1",
-                                text = "This is a comment",
+                                text = "This is a comment that has text",
                                 author = "Author 1"
                             ),
                             totalComments = 10

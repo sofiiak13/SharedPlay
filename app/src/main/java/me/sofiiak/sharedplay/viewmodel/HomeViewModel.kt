@@ -136,6 +136,8 @@ class HomeViewModel @Inject constructor(
 
             UiEvent.InitScreen -> initScreen()
 
+            UiEvent.clickedSignedOutButton -> setNeedSignIn(true)
+
             UiEvent.NavigatedToSignIn -> setNeedSignIn(false)
         }
     }
@@ -244,6 +246,8 @@ class HomeViewModel @Inject constructor(
         ) : UiEvent
 
         data object InitScreen : UiEvent
+
+        data object clickedSignedOutButton : UiEvent
 
         data object NavigatedToSignIn : UiEvent
     }
