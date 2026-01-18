@@ -41,7 +41,7 @@ All screens also support core operations such as adding, editing, sharing, and d
 - **Authentication:** Firebase Auth
 - **Networking:** Retrofit + OkHttp
 
-<img src="images/MVVM.png" width="420"/>
+<img src="images/MVVM.png" width="500"/>
 
 
 
