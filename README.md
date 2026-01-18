@@ -11,7 +11,7 @@ Friends can listen to the same music and also share their impressions and reacti
 - View and post comments
 - Pull-to-refresh content
 
-# Screenshots
+## App Screenshots
 
 Shared play currently has four different screens that each serve a distinct purpose. You can take a look at the screenshots below for better understanding.
 
