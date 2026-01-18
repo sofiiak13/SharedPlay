@@ -6,3 +6,8 @@ Friends can listen to the same music and also share their impressions and reacti
 # Screenshots
 
 Shared play currently has four different screens that each serve a distinct purpose. You can take a look at the screenshots below for better understanding.
+
+| Sign In | Home | Playlist Details | Comments | 
+|------------|------------|------------|------------|
+| ![](images.SignIn.jpg) | ![](images/Home.jpg) | ![](images/PlaylistDetails.jpg) | ![](images/CommentSection.jpg) | 
+
