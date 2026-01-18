@@ -17,7 +17,7 @@ Shared play currently has four different screens that each serve a distinct purp
 
 | Sign In | Home | 
 |------------|------------|
-| <img src="images/SignIn.jpg" height="200"/> |  <img src="images/Home.jpg" height="200"/> | 
+| <img src="images/SignIn.jpg" width="300"/> |  <img src="images/Home.jpg" width="300"/> | 
 
 The Sign-In screen appears only if the user is not authenticated, showing a welcome message and asking them to sign in with Google. Once signed in, the user is taken to the Home screen, which serves as the main entry point of the app. It shows the list of all playlists the user has access to, date when they were last updated, as well as the “Sign Out” button in the bottom right corner. 
 
