@@ -15,11 +15,15 @@ Friends can listen to the same music and also share their impressions and reacti
 
 Shared play currently has four different screens that each serve a distinct purpose. You can take a look at the screenshots below for better understanding.
 
-| Sign In | Home | Playlist Details | Comments | 
-|------------|------------|------------|------------|
-| ![SIgn In screen](images/SignIn.jpg) | ![Home screen](images/Home.jpg) | ![Playlist Details screen](images/PlaylistDetails.jpg) | ![Comments Screen](images/CommentSection.jpg) | 
+| Sign In | Home | 
+|------------|------------|
+| ![SIgn In screen](images/SignIn.jpg) | ![Home screen](images/Home.jpg) | 
 
 The Sign-In screen appears only if the user is not authenticated, showing a welcome message and asking them to sign in with Google. Once signed in, the user is taken to the Home screen, which serves as the main entry point of the app. It shows the list of all playlists the user has access to, date when they were last updated, as well as the “Sign Out” button in the bottom right corner. 
+
+|Playlist Details | Comments | 
+|------------|------------|
+| ![Playlist Details screen](images/PlaylistDetails.jpg) | ![Comments Screen](images/CommentSection.jpg) | 
 
 Clicking on a specific playlist leads to the Playlist Details screen. This screen displays information specific to the selected playlist, including the list of songs it contains, the most recent comment for each song, and the total number of comments associated with that song.
 From there, selecting an individual song opens the Comments screen, which has two main goals: allowing the user to play the song or video through the embedded YouTube player, and viewing the comment section where other editors can leave private comments and chat with each other.
